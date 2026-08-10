@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Roblox House App</title>
+    <!-- Подключение Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        
+        <!-- Верхняя шапка -->
+        <header class="app-header">
+            <div class="header-user">
+                <div class="header-avatar" id="headerAvatar">🏰</div>
+                <div class="header-info">
+                    <span class="header-greeting" id="headerGreeting">Roblox House</span>
+                    <h1 class="header-name" id="headerName">Загрузка...</h1>
+                </div>
+            </div>
+            <div class="header-badge" id="headerRoleBadge">Участник</div>
+        </header>
+
+        <!-- Основной контент (Вкладки) -->
+        <main class="app-main">
+            
+            <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ -->
+            <section id="tab-profile" class="tab-content active">
+                <div class="profile-card glass-panel">
+                    <div class="avatar-wrapper">
+                        <div class="avatar-glow"></div>
+                        <img id="profileSkinImg" class="avatar-skin" src="https://tr.rbxcdn.com/30DAY-Avatar-720x720.png" alt="Roblox Skin">
+                    </div>
+                    
+                    <div class="profile-titles">
+                        <h2 id="profileName" class="profile-display-name">Гость</h2>
+                        <p id="profileRobloxNick" class="profile-roblox-handle">@Roblox</p>
+                        <div id="profileRoleTag" class="role-tag role-member">Участник</div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">🎂 Возраст</span>
+                            <span id="profileAge" class="stat-value">—</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">🌍 Страна</span>
+                            <span id="profileCountry" class="stat-value">—</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">🆔 Roblox ID</span>
+                            <span id="profileRobloxId" class="stat-value">—</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">📅 Регистрация</span>
+                            <span id="profileRobloxDate" class="stat-value">—</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions">
+                        <a id="profileRobloxLink" href="https://www.roblox.com" target="_blank" class="btn btn-primary">
+                            <span>🎮 Профиль в Roblox</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 👥 ВКЛАДКА 2: УЧАСТНИКИ ХАУСА -->
+            <section id="tab-members" class="tab-content">
+                <div class="section-header">
+                    <div class="search-bar glass-panel">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="memberSearchInput" placeholder="Поиск по имени или нику...">
+                    </div>
+                    <div class="members-count-badge" id="membersCountBadge">Всего: 0</div>
+                </div>
+
+                <div id="membersGrid" class="members-grid">
+                    <!-- Карточки участников генерируются динамически через JS -->
+                    <div class="loading-spinner">Загрузка участников...</div>
+                </div>
+            </section>
+
+            <!-- 🎮 ВКЛАДКА 3: ИГРЫ ХАУСА -->
+            <section id="tab-games" class="tab-content">
+                <div class="section-title-wrap">
+                    <h2 class="section-title">Игры хауса 🎮</h2>
+                    <p class="section-subtitle">Плейсы, в которые играет наша тусовка</p>
+                </div>
+
+                <div class="games-list">
+                    <!-- Игра 1: Murder Mystery 2 (MM2) -->
+                    <div class="game-card glass-panel mm2-theme">
+                        <div class="game-badge">🔪 Популярно</div>
+                        <div class="game-header">
+                            <div class="game-icon">🗡️</div>
+                            <div class="game-info">
+                                <h3 class="game-name">Murder Mystery 2</h3>
+                                <span class="game-genre">MM2 • Детектив & Выживание</span>
+                            </div>
+                        </div>
+                        <p class="game-desc">
+                            Легендарный детективный режим в Roblox! Раскрывай тайны за Шерифа, выживай за Невинного или побеждай за Убийцу на сходках хауса.
+                        </p>
+                        <a href="https://www.roblox.com/games/142823291/Murder-Mystery-2" target="_blank" class="btn btn-game btn-mm2">
+                            <span>🎮 Запустить MM2 в Roblox</span>
+                        </a>
+                    </div>
+
+                    <!-- Игра 2: TTD 3 (TTD3) -->
+                    <div class="game-card glass-panel ttd3-theme">
+                        <div class="game-badge">💃 Танцы & Чилл</div>
+                        <div class="game-header">
+                            <div class="game-icon">🎵</div>
+                            <div class="game-info">
+                                <h3 class="game-name">TTD 3</h3>
+                                <span class="game-genre">TTD3 • Танцевальный Хаб</span>
+                            </div>
+                        </div>
+                        <p class="game-desc">
+                            Главный танцевальный плейс Roblox! Сотни трендовых анимаций, эмоций и музыки для тусовок, клипов и общения участников хауса.
+                        </p>
+                        <a href="https://www.roblox.com/games/5771589323/TTD-3" target="_blank" class="btn btn-game btn-ttd3">
+                            <span>💃 Запустить TTD 3 в Roblox</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 🎁 ВКЛАДКА 4: КОЛЕСО УДАЧИ -->
+            <section id="tab-bonus" class="tab-content">
+                <div class="bonus-wrapper glass-panel">
+                    <h2 class="bonus-title">🎁 Колесо Фортуны</h2>
+                    <p class="bonus-subtitle">Крути каждый день и получай призы хауса!</p>
+
+                    <div class="wheel-container">
+                        <div class="wheel-arrow">▼</div>
+                        <canvas id="wheelCanvas" width="300" height="300"></canvas>
+                    </div>
+
+                    <button id="spinBtn" class="btn btn-primary btn-spin">
+                        <span>🎡 Испытать удачу</span>
+                    </button>
+
+                    <div id="bonusResult" class="bonus-result hidden">
+                        <span class="bonus-prize-icon">🏆</span>
+                        <h4 id="bonusPrizeText">Твой приз!</h4>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Нижнее меню навигации (Tabs) -->
+        <nav class="bottom-nav glass-panel">
+            <button class="nav-btn active" data-tab="tab-profile">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Профиль</span>
+            </button>
+            <button class="nav-btn" data-tab="tab-members">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Участники</span>
+            </button>
+            <button class="nav-btn" data-tab="tab-games">
+                <span class="nav-icon">🎮</span>
+                <span class="nav-label">Игры</span>
+            </button>
+            <button class="nav-btn" data-tab="tab-bonus">
+                <span class="nav-icon">🎁</span>
+                <span class="nav-label">Бонус</span>
+            </button>
+        </nav>
+
+        <!-- Модальное окно просмотра участника -->
+        <div id="memberModal" class="modal-overlay hidden">
+            <div class="modal-card glass-panel">
+                <button id="closeModalBtn" class="modal-close-btn">&times;</button>
+                <div class="modal-avatar-wrapper">
+                    <img id="modalAvatar" class="modal-avatar" src="" alt="Skin">
+                </div>
+                <h3 id="modalName" class="modal-name">Имя</h3>
+                <p id="modalRoblox" class="modal-roblox">@roblox</p>
+                <div id="modalRole" class="role-tag role-member">Участник</div>
+
+                <div class="modal-info-grid">
+                    <div class="modal-stat">
+                        <span>Возраст:</span>
+                        <strong id="modalAge">—</strong>
+                    </div>
+                    <div class="modal-stat">
+                        <span>Страна:</span>
+                        <strong id="modalCountry">—</strong>
+                    </div>
+                    <div class="modal-stat">
+                        <span>В хаусе с:</span>
+                        <strong id="modalJoined">—</strong>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <a id="modalTgLink" href="#" target="_blank" class="btn btn-secondary">
+                        <span>💬 Написать в TG</span>
+                    </a>
+                    <a id="modalRobloxLink" href="#" target="_blank" class="btn btn-primary">
+                        <span>🎮 Roblox</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
