@@ -1,7 +1,7 @@
 import html
 import logging
 from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
@@ -34,9 +34,7 @@ PENDING_APPLICATIONS = {}
 async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, str]:
     """
     Проверяет, является ли пользователь администратором или создателем в админ-чате или чате хауса.
-    Возвращает (is_admin, status_role) -> ("creator", "administrator" или "member").
     """
-    # 1. Проверяем в админ-чате
     if ADMIN_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=ADMIN_CHAT_ID, user_id=user_id)
@@ -45,7 +43,6 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, st
         except Exception:
             pass
 
-    # 2. Проверяем в чате хауса
     if HOUSE_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=HOUSE_CHAT_ID, user_id=user_id)
@@ -57,7 +54,7 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, st
     return False, "member"
 
 
-@router.message(CommandStart())
+@router.message(CommandStart(), StateFilter("*"))
 async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     """
     Обработчик команды /start в ЛС бота.
@@ -81,10 +78,13 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     )
 
 
-@router.message(Command("app", "house", "menu"))
+@router.message(
+    F.text.lower().startswith(("/app", "!app", "/house", "!house", "/menu", "!menu", "хаус апп", "приложение")),
+    StateFilter("*")
+)
 async def cmd_open_app(message: Message):
     """
-    Команда /app, /house или /menu (работает как в ЛС, так и в групповом чате хауса).
+    Команда /app, /house, /menu, !app, а также по ключевым фразам (работает везде: в ЛС, группах и супергруппах).
     """
     count = get_member_count()
     kb = InlineKeyboardMarkup(
@@ -95,13 +95,13 @@ async def cmd_open_app(message: Message):
     text = (
         "🏰 <b>NEON BLUR • Официальное приложение хауса</b>\n\n"
         f"👥 Участников в хаусе: <b>{count}</b>\n"
-        "🎮 Игры: <b>MM2</b> и <b>TTD 3</b>\n\n"
+        "🎮 Игры: <b>Murder Mystery 2</b> и <b>TTD 3</b>\n\n"
         "<i>Нажми кнопку ниже, чтобы открыть 3D профили и список тусовки:</i>"
     )
     await message.answer(text, reply_markup=kb)
 
 
-@router.message(Command("iamcreator"))
+@router.message(Command("iamcreator"), StateFilter("*"))
 async def cmd_iam_creator(message: Message, bot: Bot):
     """
     Регистрация создателя хауса (только для владельцев и администраторов чата!).
@@ -155,7 +155,7 @@ async def cmd_iam_creator(message: Message, bot: Bot):
     )
 
 
-@router.message(Command("iamadmin"))
+@router.message(Command("iamadmin"), StateFilter("*"))
 async def cmd_iam_admin(message: Message, bot: Bot):
     """
     Регистрация администратора (только для людей с правами администратора в чате!).
@@ -209,7 +209,7 @@ async def cmd_iam_admin(message: Message, bot: Bot):
     )
 
 
-@router.message(Command("add"))
+@router.message(Command("add"), StateFilter("*"))
 async def cmd_add_member(message: Message, bot: Bot):
     """
     Команда для добавления участника/админа вручную (только для админов чата!).
@@ -258,7 +258,7 @@ async def cmd_add_member(message: Message, bot: Bot):
     await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
 
 
-@router.message(Command("setrole"))
+@router.message(Command("setrole"), StateFilter("*"))
 async def cmd_set_role(message: Message, bot: Bot):
     """
     Команда изменения роли (только для админов чата!).
@@ -288,7 +288,10 @@ async def cmd_set_role(message: Message, bot: Bot):
         await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден в базе.")
 
 
-@router.message(Command("members"))
+@router.message(
+    F.text.lower().startswith(("/members", "!members", "участники")),
+    StateFilter("*")
+)
 async def cmd_members_list(message: Message):
     """
     Команда /members в группе или ЛС.
