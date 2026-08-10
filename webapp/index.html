@@ -41,6 +41,21 @@
             --radius-full: 9999px;
         }
 
+        /* ПОЛНОЕ СКРЫТИЕ СКРОЛЛБАРА ДЛЯ ВСЕХ БРАУЗЕРОВ И СИСТЕМ */
+        html, body, * {
+            -ms-overflow-style: none !important;  /* IE и Edge */
+            scrollbar-width: none !important;  /* Firefox */
+        }
+
+        html::-webkit-scrollbar, 
+        body::-webkit-scrollbar, 
+        *::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            background: transparent !important;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -49,11 +64,12 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
             background-color: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            overflow-y: auto;
             user-select: none;
             background-image: 
                 radial-gradient(circle at 50% 0%, rgba(255, 42, 141, 0.18) 0%, transparent 50%),
@@ -840,7 +856,7 @@
                         </button>
                     </div>
 
-                    <!-- Игра 2: TTD 3 (TTD3 - Обновленная ссылка) -->
+                    <!-- Игра 2: TTD 3 (TTD3 - Рабочая ссылка) -->
                     <div class="game-card glass-panel ttd3-theme">
                         <div class="game-badge">💃 Танцы & Чилл</div>
                         <div class="game-header">
