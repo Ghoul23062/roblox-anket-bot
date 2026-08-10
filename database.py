@@ -205,3 +205,19 @@ def get_member_count():
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
+
+def remove_member(user_id):
+    """
+    Удаляет участника из базы данных и JSON-бэкапа (при бане / кике).
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM members WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM pending_applications WHERE user_id = ?", (user_id,))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    if affected > 0:
+        save_backup_json(get_all_members())
+    return affected > 0
