@@ -17,12 +17,14 @@
             --bg-card: rgba(15, 15, 32, 0.78);
             --border-neon-pink: rgba(255, 42, 141, 0.35);
             --border-neon-purple: rgba(155, 69, 255, 0.35);
+            --border-neon-gold: rgba(255, 230, 0, 0.45);
             
             --neon-pink: #ff2a8d;
             --neon-pink-bright: #ff007f;
             --neon-purple: #9b45ff;
             --neon-cyan: #00f0ff;
             --neon-yellow: #ffe600;
+            --neon-gold: #fbbf24;
 
             --text-primary: #ffffff;
             --text-secondary: #c4b5fd;
@@ -30,10 +32,11 @@
 
             --gradient-neon: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 50%, #00f0ff 100%);
             --gradient-pink-purple: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 100%);
-            --gradient-purple-cyan: linear-gradient(135deg, #9b45ff 0%, #00f0ff 100%);
+            --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
 
             --glow-pink: 0 0 20px rgba(255, 42, 141, 0.55), 0 0 40px rgba(255, 42, 141, 0.25);
             --glow-purple: 0 0 20px rgba(155, 69, 255, 0.55), 0 0 40px rgba(155, 69, 255, 0.25);
+            --glow-gold: 0 0 22px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.3);
 
             --radius-sm: 10px;
             --radius-md: 18px;
@@ -259,7 +262,7 @@
 
         .role-tag {
             display: inline-block;
-            padding: 5px 18px;
+            padding: 6px 18px;
             border-radius: var(--radius-full);
             font-size: 12px;
             font-weight: 800;
@@ -268,14 +271,14 @@
         }
 
         .role-creator {
-            background: rgba(255, 230, 0, 0.15);
-            color: var(--neon-yellow);
-            border: 1px solid var(--neon-yellow);
-            box-shadow: 0 0 16px rgba(255, 230, 0, 0.35);
+            background: rgba(251, 191, 36, 0.18);
+            color: var(--neon-gold);
+            border: 1px solid var(--neon-gold);
+            box-shadow: var(--glow-gold);
         }
 
         .role-admin {
-            background: rgba(255, 42, 141, 0.15);
+            background: rgba(255, 42, 141, 0.18);
             color: var(--neon-pink);
             border: 1px solid var(--neon-pink);
             box-shadow: var(--glow-pink);
@@ -357,12 +360,18 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        /* ================== УЧАСТНИКИ ================== */
+        /* ================== УЧАСТНИКИ & ФИЛЬТРЫ РОЛЕЙ ================== */
         .section-header {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 12px;
             margin-bottom: 16px;
+        }
+
+        .search-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .search-bar {
@@ -399,6 +408,34 @@
             border: 1px solid rgba(0, 240, 255, 0.25);
         }
 
+        /* Фильтр по ролям */
+        .role-filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+
+        .filter-chip {
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .filter-chip.active {
+            background: var(--gradient-pink-purple);
+            color: #ffffff;
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 12px rgba(255, 42, 141, 0.4);
+        }
+
         .members-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -413,13 +450,35 @@
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(155, 69, 255, 0.2);
+            border: 1px solid rgba(155, 69, 255, 0.25);
         }
 
         .member-card:hover {
             transform: translateY(-3px);
-            border-color: var(--neon-pink);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 42, 141, 0.3);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Специальные карточки по ролям */
+        .card-creator {
+            border: 1px solid var(--neon-gold) !important;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.25) !important;
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.08) 0%, rgba(15, 15, 32, 0.85) 100%);
+        }
+
+        .card-creator .member-name {
+            color: var(--neon-gold);
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        .card-admin {
+            border: 1px solid var(--neon-pink) !important;
+            box-shadow: 0 0 20px rgba(255, 42, 141, 0.25) !important;
+            background: linear-gradient(180deg, rgba(255, 42, 141, 0.08) 0%, rgba(15, 15, 32, 0.85) 100%);
+        }
+
+        .card-admin .member-name {
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px rgba(255, 42, 141, 0.5);
         }
 
         .member-avatar {
@@ -446,7 +505,7 @@
 
         .member-roblox {
             font-size: 12px;
-            color: var(--neon-pink);
+            color: var(--neon-cyan);
             font-weight: 700;
             margin-bottom: 10px;
             white-space: nowrap;
@@ -753,7 +812,7 @@
             
             <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ -->
             <section id="tab-profile" class="tab-content active">
-                <div class="profile-card glass-panel">
+                <div id="profileCard" class="profile-card glass-panel">
                     
                     <!-- 3D Интерактивный подиум -->
                     <div class="stage-3d-container" id="stage3D">
@@ -796,14 +855,24 @@
                 </div>
             </section>
 
-            <!-- 👥 ВКЛАДКА 2: УЧАСТНИКИ ХАУСА -->
+            <!-- 👥 ВКЛАДКА 2: УЧАСТНИКИ ХАУСА (С ФИЛЬТРАМИ И VIP БЕЙДЖАМИ) -->
             <section id="tab-members" class="tab-content">
                 <div class="section-header">
-                    <div class="search-bar glass-panel">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="memberSearchInput" placeholder="Поиск по имени или нику...">
+                    <div class="search-bar-row">
+                        <div class="search-bar glass-panel">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="memberSearchInput" placeholder="Поиск по имени или нику...">
+                        </div>
+                        <div class="members-count-badge" id="membersCountBadge">Всего: 0</div>
                     </div>
-                    <div class="members-count-badge" id="membersCountBadge">Всего: 0</div>
+
+                    <!-- Фильтры по ролям -->
+                    <div class="role-filters">
+                        <button class="filter-chip active" data-filter="all">⚡ Все</button>
+                        <button class="filter-chip" data-filter="Создатель">👑 Создатель</button>
+                        <button class="filter-chip" data-filter="Администратор">🛡️ Админы</button>
+                        <button class="filter-chip" data-filter="Участник">✨ Участники</button>
+                    </div>
                 </div>
 
                 <div id="membersGrid" class="members-grid">
@@ -879,7 +948,7 @@
 
         <!-- Модальное окно просмотра участника -->
         <div id="memberModal" class="modal-overlay hidden">
-            <div class="modal-card glass-panel">
+            <div class="modal-card glass-panel" id="modalCardInner">
                 <button id="closeModalBtn" class="modal-close-btn">&times;</button>
                 <div class="modal-avatar-wrapper">
                     <img id="modalAvatar" class="modal-avatar" src="https://tr.rbxcdn.com/30DAY-Avatar-882C70E071E5997E51F8CB373002AFC3-Png/720/720/Avatar/Png/noFilter" alt="Skin">
@@ -938,6 +1007,7 @@
 
         let allMembers = [];
         let currentMemberData = null;
+        let currentFilter = "all";
 
         // Открытие внешних ссылок через Telegram WebApp API
         function openExternalUrl(url) {
@@ -988,7 +1058,7 @@
         }
         renderLoop();
 
-        // Touch (мобильные телефоны)
+        // Touch (смартфоны)
         stage3D.addEventListener('touchstart', (e) => {
             isDragging = true;
             autoRotate = false;
@@ -1093,8 +1163,18 @@
             document.getElementById('profileRobloxNick').textContent = `@${member.roblox_username} (${member.roblox_display_name || member.roblox_username})`;
             
             const roleTag = document.getElementById('profileRoleTag');
-            roleTag.textContent = member.role || "Участник";
-            roleTag.className = `role-tag ${getRoleClass(member.role)}`;
+            const role = member.role || "Участник";
+            roleTag.textContent = getRoleBadgeText(role);
+            roleTag.className = `role-tag ${getRoleClass(role)}`;
+
+            const profileCard = document.getElementById('profileCard');
+            if (role === "Создатель") {
+                profileCard.style.borderColor = "var(--neon-gold)";
+                profileCard.style.boxShadow = "var(--glow-gold)";
+            } else if (role === "Администратор") {
+                profileCard.style.borderColor = "var(--neon-pink)";
+                profileCard.style.boxShadow = "var(--glow-pink)";
+            }
 
             document.getElementById('profileAge').textContent = member.age ? `${member.age} лет` : "—";
             document.getElementById('profileCountry').textContent = member.country || "—";
@@ -1110,7 +1190,7 @@
             const displayName = tgUser.first_name || "Гость";
             document.getElementById('profileName').textContent = displayName;
             document.getElementById('profileSkinImg').src = DEFAULT_AVATAR;
-            document.getElementById('profileRobloxNick').textContent = "Заявка не подана";
+            document.getElementById('profileRobloxNick').textContent = "Анкета не подана";
             
             const roleTag = document.getElementById('profileRoleTag');
             roleTag.textContent = "Не в хаусе";
@@ -1122,7 +1202,7 @@
             document.getElementById('profileRobloxDate').textContent = "—";
 
             const robloxBtn = document.getElementById('profileRobloxBtn');
-            robloxBtn.innerHTML = "<span>📝 Подай анкету в боте!</span>";
+            robloxBtn.innerHTML = "<span>📝 Напиши боту команду /start</span>";
             robloxBtn.onclick = () => {
                 if (tg && tg.close) tg.close();
             };
@@ -1134,14 +1214,26 @@
             return "role-member";
         }
 
-        // ================== ЗАГРУЗКА И ПОИСК УЧАСТНИКОВ ==================
+        function getRoleBadgeText(role) {
+            if (role === "Создатель") return "👑 Создатель";
+            if (role === "Администратор") return "🛡️ Администратор";
+            return "✨ Участник";
+        }
+
+        function getCardRoleClass(role) {
+            if (role === "Создатель") return "card-creator";
+            if (role === "Администратор") return "card-admin";
+            return "";
+        }
+
+        // ================== ЗАГРУЗКА И ФИЛЬТРАЦИЯ УЧАСТНИКОВ ==================
         async function loadMembers() {
             const grid = document.getElementById('membersGrid');
             try {
                 const res = await fetch('/api/members');
                 if (res.ok) {
                     allMembers = await res.json();
-                    renderMembers(allMembers);
+                    applyFilterAndSearch();
                     document.getElementById('membersCountBadge').textContent = `Всего: ${allMembers.length}`;
                     return;
                 }
@@ -1159,32 +1251,56 @@
                 return;
             }
 
-            grid.innerHTML = members.map(m => `
-                <div class="member-card glass-panel" onclick="openMemberModal(${m.user_id})">
-                    <img class="member-avatar" src="${m.avatar_url || DEFAULT_AVATAR}" alt="${escapeHtml(m.name)}" onerror="this.src='${DEFAULT_AVATAR}'">
-                    <h4 class="member-name">${escapeHtml(m.name || m.full_name)}</h4>
-                    <p class="member-roblox">@${escapeHtml(m.roblox_username || '')}</p>
-                    <span class="role-tag ${getRoleClass(m.role)}">${m.role || 'Участник'}</span>
-                </div>
-            `).join('');
+            grid.innerHTML = members.map(m => {
+                const role = m.role || 'Участник';
+                return `
+                    <div class="member-card glass-panel ${getCardRoleClass(role)}" onclick="openMemberModal(${m.user_id})">
+                        <img class="member-avatar" src="${m.avatar_url || DEFAULT_AVATAR}" alt="${escapeHtml(m.name)}" onerror="this.src='${DEFAULT_AVATAR}'">
+                        <h4 class="member-name">${escapeHtml(m.name || m.full_name)}</h4>
+                        <p class="member-roblox">@${escapeHtml(m.roblox_username || '')}</p>
+                        <span class="role-tag ${getRoleClass(role)}">${getRoleBadgeText(role)}</span>
+                    </div>
+                `;
+            }).join('');
         }
 
-        const searchInput = document.getElementById('memberSearchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase().trim();
-                if (!query) {
-                    renderMembers(allMembers);
-                    return;
-                }
+        function applyFilterAndSearch() {
+            const searchInput = document.getElementById('memberSearchInput');
+            const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
-                const filtered = allMembers.filter(m => 
+            let filtered = allMembers;
+
+            // Фильтр по роли
+            if (currentFilter !== "all") {
+                filtered = filtered.filter(m => (m.role || "Участник") === currentFilter);
+            }
+
+            // Фильтр по поисковой строке
+            if (query) {
+                filtered = filtered.filter(m => 
                     (m.name && m.name.toLowerCase().includes(query)) ||
                     (m.roblox_username && m.roblox_username.toLowerCase().includes(query)) ||
                     (m.country && m.country.toLowerCase().includes(query))
                 );
-                renderMembers(filtered);
+            }
+
+            renderMembers(filtered);
+        }
+
+        // Фильтры по ролям
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentFilter = chip.getAttribute('data-filter');
+                if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+                applyFilterAndSearch();
             });
+        });
+
+        const searchInput = document.getElementById('memberSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', applyFilterAndSearch);
         }
 
         // ================== МОДАЛЬНОЕ ОКНО УЧАСТНИКА ==================
@@ -1196,13 +1312,14 @@
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
+            const role = member.role || "Участник";
             document.getElementById('modalAvatar').src = member.avatar_url || DEFAULT_AVATAR;
             document.getElementById('modalName').textContent = member.name || member.full_name;
             document.getElementById('modalRoblox').textContent = `@${member.roblox_username} (${member.roblox_display_name || ''})`;
             
             const roleEl = document.getElementById('modalRole');
-            roleEl.textContent = member.role || "Участник";
-            roleEl.className = `role-tag ${getRoleClass(member.role)}`;
+            roleEl.textContent = getRoleBadgeText(role);
+            roleEl.className = `role-tag ${getRoleClass(role)}`;
 
             document.getElementById('modalAge').textContent = member.age ? `${member.age} лет` : "—";
             document.getElementById('modalCountry').textContent = member.country || '—';
