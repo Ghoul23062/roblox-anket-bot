@@ -3,33 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Roblox House App</title>
+    <title>NEON BLUR • Roblox House</title>
     <!-- Подключение Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Google Fonts: Outfit -->
+    <!-- Google Fonts: Outfit & Orbitron -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-main: #080b11;
-            --bg-card: rgba(16, 22, 34, 0.8);
-            --bg-card-hover: rgba(24, 32, 48, 0.9);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --bg-dark: #070712;
+            --bg-card: rgba(15, 15, 32, 0.78);
+            --bg-card-hover: rgba(25, 25, 52, 0.88);
+            --border-neon-pink: rgba(255, 42, 141, 0.35);
+            --border-neon-purple: rgba(155, 69, 255, 0.35);
             
-            --neon-red: #ff2d55;
+            --neon-pink: #ff2a8d;
+            --neon-pink-bright: #ff007f;
+            --neon-purple: #9b45ff;
             --neon-cyan: #00f0ff;
-            --neon-purple: #8b5cf6;
-            --neon-gold: #f59e0b;
+            --neon-yellow: #ffe600;
 
-            --gradient-primary: linear-gradient(135deg, #ff2d55 0%, #8b5cf6 100%);
-            --gradient-cyan: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%);
-            --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-            
+            --text-primary: #ffffff;
+            --text-secondary: #c4b5fd;
+            --text-muted: #7c729e;
+
+            --gradient-neon: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 50%, #00f0ff 100%);
+            --gradient-pink-purple: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 100%);
+            --gradient-purple-cyan: linear-gradient(135deg, #9b45ff 0%, #00f0ff 100%);
+
+            --glow-pink: 0 0 20px rgba(255, 42, 141, 0.55), 0 0 40px rgba(255, 42, 141, 0.25);
+            --glow-purple: 0 0 20px rgba(155, 69, 255, 0.55), 0 0 40px rgba(155, 69, 255, 0.25);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.55);
+
             --radius-sm: 10px;
             --radius-md: 18px;
             --radius-lg: 26px;
@@ -40,19 +47,21 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Outfit', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-main);
+            background-color: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
             user-select: none;
             background-image: 
-                radial-gradient(circle at 10% 15%, rgba(255, 45, 85, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 85%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+                radial-gradient(circle at 50% 0%, rgba(255, 42, 141, 0.18) 0%, transparent 50%),
+                radial-gradient(circle at 10% 40%, rgba(155, 69, 255, 0.14) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 45%);
+            background-attachment: fixed;
         }
 
         .app-container {
@@ -62,18 +71,18 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            padding-bottom: 96px;
+            padding-bottom: 100px;
         }
 
         .glass-panel {
             background: var(--bg-card);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-neon-purple);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
-        /* ================== ШАПКА ================== */
+        /* ================== НЕОНОВАЯ ШАПКА ================== */
         .app-header {
             display: flex;
             align-items: center;
@@ -82,51 +91,57 @@
             position: sticky;
             top: 0;
             z-index: 40;
-            background: rgba(8, 11, 17, 0.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid var(--border-color);
+            background: rgba(7, 7, 18, 0.9);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-neon-pink);
+            box-shadow: 0 4px 25px rgba(255, 42, 141, 0.15);
         }
 
-        .header-user {
+        .header-logo-group {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
         }
 
-        .header-avatar {
-            width: 44px;
-            height: 44px;
+        .neon-circle-avatar {
+            width: 48px;
+            height: 48px;
             border-radius: var(--radius-full);
-            background: var(--gradient-primary);
+            background: var(--gradient-pink-purple);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 0 20px rgba(255, 45, 85, 0.4);
-            animation: pulseGlow 3s infinite alternate;
+            font-size: 24px;
+            box-shadow: var(--glow-pink);
+            border: 2px solid #ffffff;
+            position: relative;
         }
 
-        @keyframes pulseGlow {
-            from { transform: scale(1); box-shadow: 0 0 16px rgba(255, 45, 85, 0.3); }
-            to { transform: scale(1.04); box-shadow: 0 0 24px rgba(139, 92, 246, 0.5); }
+        .header-titles {
+            display: flex;
+            flex-direction: column;
         }
 
-        .header-greeting {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
+        .neon-brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #ff2a8d, #ffffff, #9b45ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 42, 141, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .neon-sub-brand {
+            font-size: 10px;
             font-weight: 700;
-        }
-
-        .header-name {
-            font-size: 17px;
-            font-weight: 800;
-            color: var(--text-primary);
-            max-width: 220px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
         }
 
         /* ================== КОНТЕНТ ================== */
@@ -137,132 +152,155 @@
 
         .tab-content {
             display: none;
-            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(12px); }
+        @keyframes tabFadeIn {
+            from { opacity: 0; transform: translateY(14px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ================== ПРОФИЛЬ ================== */
+        /* ================== ПРОФИЛЬ & 3D СКИН ================== */
         .profile-card {
             border-radius: var(--radius-lg);
             padding: 24px 20px;
             text-align: center;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-neon-pink);
+            box-shadow: 0 0 35px rgba(255, 42, 141, 0.18);
         }
 
-        .avatar-wrapper {
+        .stage-3d-container {
             position: relative;
-            width: 190px;
-            height: 190px;
-            margin: 0 auto 16px;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 12px;
+            perspective: 1000px;
+            cursor: grab;
         }
 
-        .avatar-glow {
+        .stage-3d-container:active {
+            cursor: grabbing;
+        }
+
+        .neon-pedestal {
             position: absolute;
-            inset: 12px;
-            border-radius: var(--radius-full);
-            background: radial-gradient(circle, rgba(255, 45, 85, 0.4) 0%, rgba(139, 92, 246, 0.2) 60%, transparent 80%);
-            filter: blur(28px);
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 24px;
+            background: radial-gradient(ellipse at center, rgba(255, 42, 141, 0.6) 0%, rgba(155, 69, 255, 0.2) 60%, transparent 80%);
+            border-radius: 50%;
+            filter: blur(4px);
             z-index: 1;
-            animation: rotateGlow 8s linear infinite;
+            animation: pedestalPulse 2.5s infinite alternate;
         }
 
-        @keyframes rotateGlow {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.1); }
-            100% { transform: rotate(360deg) scale(1); }
+        @keyframes pedestalPulse {
+            from { opacity: 0.6; transform: translateX(-50%) scale(0.95); }
+            to { opacity: 1; transform: translateX(-50%) scale(1.1); }
         }
 
-        .avatar-skin {
+        .skin-3d-wrapper {
             position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.08s ease-out;
             z-index: 2;
+        }
+
+        .skin-3d-img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.7));
-            animation: floatSkin 4s ease-in-out infinite alternate;
+            filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 42, 141, 0.3));
+            pointer-events: none;
         }
 
-        @keyframes floatSkin {
-            from { transform: translateY(-5px); }
-            to { transform: translateY(5px); }
+        .rotate-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            margin-bottom: 14px;
         }
 
         .profile-titles {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .profile-display-name {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             letter-spacing: -0.3px;
         }
 
         .profile-roblox-handle {
             font-size: 14px;
-            color: var(--neon-cyan);
-            font-weight: 600;
+            color: var(--neon-pink);
+            font-weight: 700;
             margin-bottom: 12px;
+            text-shadow: 0 0 12px rgba(255, 42, 141, 0.5);
         }
 
         .role-tag {
             display: inline-block;
-            padding: 5px 16px;
+            padding: 5px 18px;
             border-radius: var(--radius-full);
             font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .role-creator {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--neon-gold);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+            background: rgba(255, 230, 0, 0.15);
+            color: var(--neon-yellow);
+            border: 1px solid var(--neon-yellow);
+            box-shadow: 0 0 16px rgba(255, 230, 0, 0.35);
         }
 
         .role-admin {
-            background: rgba(255, 45, 85, 0.15);
-            color: var(--neon-red);
-            border: 1px solid rgba(255, 45, 85, 0.4);
-            box-shadow: 0 0 16px rgba(255, 45, 85, 0.2);
+            background: rgba(255, 42, 141, 0.15);
+            color: var(--neon-pink);
+            border: 1px solid var(--neon-pink);
+            box-shadow: var(--glow-pink);
         }
 
         .role-member {
-            background: rgba(0, 240, 255, 0.12);
-            color: var(--neon-cyan);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
+            background: rgba(155, 69, 255, 0.15);
+            color: var(--neon-purple);
+            border: 1px solid var(--neon-purple);
+            box-shadow: var(--glow-purple);
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
 
         .stat-box {
-            background: rgba(255, 255, 255, 0.025);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: var(--radius-md);
-            padding: 14px 12px;
+            padding: 12px 14px;
             text-align: left;
-            transition: background 0.2s ease;
-        }
-
-        .stat-box:hover {
-            background: rgba(255, 255, 255, 0.04);
         }
 
         .stat-label {
@@ -279,12 +317,6 @@
             color: var(--text-primary);
         }
 
-        .profile-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
         /* ================== КНОПКИ ================== */
         .btn {
             display: flex;
@@ -295,20 +327,28 @@
             padding: 14px 20px;
             border-radius: var(--radius-md);
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             border: none;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .btn:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
         }
 
-        .btn-primary {
-            background: var(--gradient-primary);
+        .btn-neon-pink {
+            background: linear-gradient(135deg, #ff2a8d 0%, #b5179e 100%);
             color: #ffffff;
-            box-shadow: 0 6px 24px rgba(255, 45, 85, 0.35);
+            box-shadow: var(--glow-pink);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-neon-purple {
+            background: linear-gradient(135deg, #9b45ff 0%, #6366f1 100%);
+            color: #ffffff;
+            box-shadow: var(--glow-purple);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .btn-secondary {
@@ -317,8 +357,57 @@
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+        /* Форма привязки ника */
+        .sync-box {
+            margin-top: 14px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 42, 141, 0.06);
+            border: 1px dashed var(--border-neon-pink);
+            text-align: left;
+        }
+
+        .sync-box-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--neon-pink);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sync-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sync-input {
+            flex: 1;
+            background: rgba(10, 10, 24, 0.8);
+            border: 1px solid rgba(255, 42, 141, 0.3);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .sync-input:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 12px rgba(255, 42, 141, 0.3);
+        }
+
+        .btn-sync-submit {
+            padding: 10px 18px;
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            background: var(--gradient-pink-purple);
+            color: #ffffff;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 14px rgba(255, 42, 141, 0.4);
         }
 
         /* ================== УЧАСТНИКИ ================== */
@@ -336,6 +425,7 @@
             gap: 10px;
             padding: 12px 16px;
             border-radius: var(--radius-md);
+            border: 1px solid var(--border-neon-purple);
         }
 
         .search-bar input {
@@ -353,13 +443,13 @@
 
         .members-count-badge {
             font-size: 12px;
-            font-weight: 700;
-            color: var(--text-secondary);
+            font-weight: 800;
+            color: var(--neon-cyan);
             white-space: nowrap;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 6px 12px;
+            background: rgba(0, 240, 255, 0.08);
+            padding: 8px 14px;
             border-radius: var(--radius-full);
-            border: 1px solid var(--border-color);
+            border: 1px solid rgba(0, 240, 255, 0.25);
         }
 
         .members-grid {
@@ -376,12 +466,13 @@
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(155, 69, 255, 0.2);
         }
 
         .member-card:hover {
             transform: translateY(-3px);
-            border-color: rgba(255, 45, 85, 0.3);
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+            border-color: var(--neon-pink);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 42, 141, 0.3);
         }
 
         .member-avatar {
@@ -389,17 +480,17 @@
             height: 85px;
             object-fit: contain;
             margin: 0 auto 10px;
-            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
             transition: transform 0.3s ease;
         }
 
         .member-card:hover .member-avatar {
-            transform: scale(1.08);
+            transform: scale(1.1);
         }
 
         .member-name {
             font-size: 14px;
-            font-weight: 700;
+            font-weight: 800;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -408,28 +499,32 @@
 
         .member-roblox {
             font-size: 12px;
-            color: var(--neon-cyan);
-            font-weight: 600;
+            color: var(--neon-pink);
+            font-weight: 700;
             margin-bottom: 10px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        /* ================== ИГРЫ ХАУСА (MM2 & TTD3) ================== */
+        /* ================== ИГРЫ ХАУСА ================== */
         .section-title-wrap {
             margin-bottom: 18px;
         }
 
         .section-title {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -0.3px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #ff2a8d, #9b45ff, #00f0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .section-subtitle {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             margin-top: 2px;
         }
 
@@ -456,27 +551,31 @@
             top: 16px;
             right: 16px;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
             padding: 4px 12px;
             border-radius: var(--radius-full);
         }
 
         .mm2-theme {
-            border-left: 4px solid var(--neon-red);
+            border: 1px solid var(--border-neon-pink);
+            box-shadow: 0 0 25px rgba(255, 42, 141, 0.15);
         }
         .mm2-theme .game-badge {
-            background: rgba(255, 45, 85, 0.15);
-            color: var(--neon-red);
-            border: 1px solid rgba(255, 45, 85, 0.3);
+            background: rgba(255, 42, 141, 0.15);
+            color: var(--neon-pink);
+            border: 1px solid var(--neon-pink);
+            box-shadow: 0 0 12px rgba(255, 42, 141, 0.3);
         }
 
         .ttd3-theme {
-            border-left: 4px solid var(--neon-purple);
+            border: 1px solid var(--border-neon-purple);
+            box-shadow: 0 0 25px rgba(155, 69, 255, 0.15);
         }
         .ttd3-theme .game-badge {
-            background: rgba(139, 92, 246, 0.15);
+            background: rgba(155, 69, 255, 0.15);
             color: var(--neon-purple);
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 0 12px rgba(155, 69, 255, 0.3);
         }
 
         .game-header {
@@ -487,18 +586,19 @@
         }
 
         .game-icon {
-            font-size: 34px;
-            width: 48px;
-            height: 48px;
+            font-size: 32px;
+            width: 50px;
+            height: 50px;
             border-radius: var(--radius-md);
             background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .game-name {
-            font-size: 19px;
+            font-size: 20px;
             font-weight: 800;
         }
 
@@ -514,23 +614,13 @@
             margin-bottom: 18px;
         }
 
-        .btn-mm2 {
-            background: linear-gradient(135deg, #ff2d55 0%, #b91c1c 100%);
-            box-shadow: 0 4px 20px rgba(255, 45, 85, 0.35);
-        }
-
-        .btn-ttd3 {
-            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
-        }
-
-        /* ================== НИЖНЯЯ НАВИГАЦИЯ (3 ВКЛАДКИ) ================== */
+        /* ================== ПАРЯЩЕЕ НЕОНОВОЕ МЕНЮ (3 ВКЛАДКИ) ================== */
         .bottom-nav-container {
             position: fixed;
             bottom: 16px;
             left: 0;
             right: 0;
-            max-width: 440px;
+            max-width: 420px;
             margin: 0 auto;
             padding: 0 16px;
             z-index: 50;
@@ -538,14 +628,15 @@
 
         .bottom-nav {
             border-radius: var(--radius-full);
-            height: 66px;
+            height: 68px;
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding: 6px 10px;
-            background: rgba(12, 16, 26, 0.88);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+            padding: 6px 12px;
+            background: rgba(10, 10, 24, 0.92);
+            border: 1px solid var(--border-neon-pink);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 42, 141, 0.25);
+            backdrop-filter: blur(20px);
         }
 
         .nav-btn {
@@ -572,8 +663,8 @@
 
         .nav-btn .nav-label {
             font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.2px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
         }
 
         .nav-btn.active {
@@ -581,33 +672,32 @@
         }
 
         .nav-btn.active .nav-icon {
-            transform: translateY(-2px);
-            filter: drop-shadow(0 0 10px rgba(255, 45, 85, 0.8));
+            transform: translateY(-3px) scale(1.15);
+            filter: drop-shadow(0 0 12px rgba(255, 42, 141, 0.9));
         }
 
         .nav-btn.active::after {
             content: '';
             position: absolute;
-            bottom: 2px;
-            width: 18px;
+            bottom: 3px;
+            width: 22px;
             height: 3px;
-            background: var(--gradient-primary);
+            background: var(--gradient-pink-purple);
             border-radius: var(--radius-full);
-            box-shadow: 0 0 8px rgba(255, 45, 85, 0.8);
+            box-shadow: 0 0 10px rgba(255, 42, 141, 0.9);
         }
 
-        /* ================== МОДАЛЬНОЕ ОКНО ================== */
+        /* ================== МОДАЛЬНОЕ ОКНО УЧАСТНИКА ================== */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
             z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            animation: fadeIn 0.2s ease;
         }
 
         .modal-overlay.hidden {
@@ -621,11 +711,13 @@
             padding: 26px 20px;
             text-align: center;
             position: relative;
-            animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid var(--border-neon-pink);
+            box-shadow: 0 0 40px rgba(255, 42, 141, 0.3);
+            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes scaleUp {
-            from { transform: scale(0.92); opacity: 0; }
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
 
@@ -638,16 +730,11 @@
             color: var(--text-muted);
             font-size: 26px;
             cursor: pointer;
-            transition: color 0.2s ease;
-        }
-
-        .modal-close-btn:hover {
-            color: #ffffff;
         }
 
         .modal-avatar-wrapper {
-            width: 140px;
-            height: 140px;
+            width: 130px;
+            height: 130px;
             margin: 0 auto 12px;
         }
 
@@ -655,7 +742,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.6));
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.7));
         }
 
         .modal-name {
@@ -666,8 +753,8 @@
 
         .modal-roblox {
             font-size: 13px;
-            color: var(--neon-cyan);
-            font-weight: 600;
+            color: var(--neon-pink);
+            font-weight: 700;
             margin-bottom: 10px;
         }
 
@@ -698,62 +785,18 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-
-        /* Форма синхронизации ника */
-        .sync-box {
-            margin-top: 12px;
-            padding: 14px;
-            border-radius: var(--radius-md);
-            background: rgba(0, 240, 255, 0.05);
-            border: 1px dashed rgba(0, 240, 255, 0.25);
-            text-align: left;
-        }
-
-        .sync-box-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            margin-bottom: 8px;
-        }
-
-        .sync-input-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .sync-input {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: var(--radius-sm);
-            padding: 8px 12px;
-            color: #ffffff;
-            font-size: 13px;
-            outline: none;
-        }
-
-        .btn-sync-submit {
-            padding: 8px 16px;
-            font-size: 12px;
-            border-radius: var(--radius-sm);
-            background: var(--gradient-cyan);
-            color: #ffffff;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
     <div id="app" class="app-container">
         
-        <!-- Верхняя шапка -->
+        <!-- Верхняя шапка NEON BLUR -->
         <header class="app-header">
-            <div class="header-user">
-                <div class="header-avatar" id="headerAvatar">🏰</div>
-                <div class="header-info">
-                    <span class="header-greeting">ROBLOX HOUSE</span>
-                    <h1 class="header-name" id="headerName">Загрузка...</h1>
+            <div class="header-logo-group">
+                <div class="neon-circle-avatar">💖</div>
+                <div class="header-titles">
+                    <h1 class="neon-brand-title">NEON BLUR</h1>
+                    <span class="neon-sub-brand">ФЛУД • ROBLOX</span>
                 </div>
             </div>
         </header>
@@ -761,16 +804,25 @@
         <!-- Основной контент (Вкладки) -->
         <main class="app-main">
             
-            <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ -->
+            <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ (С ИНТЕРАКТИВНЫМ 3D СКИНОВЫМ ПОДИУМОМ) -->
             <section id="tab-profile" class="tab-content active">
                 <div class="profile-card glass-panel">
-                    <div class="avatar-wrapper">
-                        <div class="avatar-glow"></div>
-                        <img id="profileSkinImg" class="avatar-skin" src="https://tr.rbxcdn.com/30DAY-Avatar-882C70E071E5997E51F8CB373002AFC3-Png/720/720/Avatar/Png/noFilter" alt="Roblox Skin">
+                    
+                    <!-- 3D Интерактивный подиум -->
+                    <div class="stage-3d-container" id="stage3D">
+                        <div class="neon-pedestal"></div>
+                        <div class="skin-3d-wrapper" id="skin3DWrapper">
+                            <img id="profileSkinImg" class="skin-3d-img" src="https://tr.rbxcdn.com/30DAY-Avatar-882C70E071E5997E51F8CB373002AFC3-Png/720/720/Avatar/Png/noFilter" alt="Roblox 3D Skin">
+                        </div>
+                    </div>
+
+                    <div class="rotate-hint">
+                        <span>🖐️</span>
+                        <span>Крути скин пальцем / мышкой</span>
                     </div>
                     
                     <div class="profile-titles">
-                        <h2 id="profileName" class="profile-display-name">Гость</h2>
+                        <h2 id="profileName" class="profile-display-name">Участник</h2>
                         <p id="profileRobloxNick" class="profile-roblox-handle">@Roblox</p>
                         <div id="profileRoleTag" class="role-tag role-member">Участник</div>
                     </div>
@@ -795,14 +847,17 @@
                     </div>
 
                     <div class="profile-actions">
-                        <button id="profileRobloxBtn" class="btn btn-primary">
+                        <button id="profileRobloxBtn" class="btn btn-neon-pink">
                             <span>🎮 Профиль в Roblox</span>
                         </button>
                     </div>
 
                     <!-- Форма привязки никнейма прямо из WebApp -->
                     <div id="syncBox" class="sync-box">
-                        <div class="sync-box-title">🔗 Привязать свой скин Roblox:</div>
+                        <div class="sync-box-title">
+                            <span>🔗</span>
+                            <span>Привязать свой скин Roblox:</span>
+                        </div>
                         <div class="sync-input-row">
                             <input type="text" id="syncInputNick" class="sync-input" placeholder="Введи свой ник в Roblox...">
                             <button id="syncSubmitBtn" class="btn-sync-submit">Найти</button>
@@ -829,14 +884,14 @@
             <!-- 🎮 ВКЛАДКА 3: ИГРЫ ХАУСА (MM2 & TTD3) -->
             <section id="tab-games" class="tab-content">
                 <div class="section-title-wrap">
-                    <h2 class="section-title">Игры хауса 🎮</h2>
-                    <p class="section-subtitle">Плейсы, в которые играет наш хаус</p>
+                    <h2 class="section-title">ИГРЫ ХАУСА 🎮</h2>
+                    <p class="section-subtitle">Плейсы, в которые играет наша тусовка</p>
                 </div>
 
                 <div class="games-list">
                     <!-- Игра 1: Murder Mystery 2 (MM2) -->
                     <div class="game-card glass-panel mm2-theme">
-                        <div class="game-badge">🔪 Популярно</div>
+                        <div class="game-badge">🔪 Топ Сходка</div>
                         <div class="game-header">
                             <div class="game-icon">🗡️</div>
                             <div class="game-info">
@@ -845,10 +900,10 @@
                             </div>
                         </div>
                         <p class="game-desc">
-                            Легендарный детективный режим в Roblox! Раскрывай тайны за Шерифа, выживай за Невинного или побеждай за Убийцу на сходках хауса.
+                            Главный детективный режим в Roblox! Раскрывай тайны за Шерифа, выживай за Невинного или побеждай за Убийцу на сходках хауса.
                         </p>
-                        <button onclick="openRobloxGame('142823291')" class="btn btn-mm2">
-                            <span>🎮 Запустить MM2 в Roblox</span>
+                        <button onclick="launchRobloxPlace('142823291')" class="btn btn-neon-pink">
+                            <span>🎮 Запустить MM2</span>
                         </button>
                     </div>
 
@@ -865,8 +920,8 @@
                         <p class="game-desc">
                             Главный танцевальный плейс Roblox! Сотни трендовых анимаций, эмоций и музыки для тусовок, клипов и общения участников хауса.
                         </p>
-                        <button onclick="openRobloxGame('5771589323')" class="btn btn-ttd3">
-                            <span>💃 Запустить TTD 3 в Roblox</span>
+                        <button onclick="launchRobloxPlace('5771589323')" class="btn btn-neon-purple">
+                            <span>💃 Запустить TTD 3</span>
                         </button>
                     </div>
                 </div>
@@ -876,7 +931,7 @@
 
         <!-- Нижнее меню навигации (3 ВКЛАДКИ) -->
         <div class="bottom-nav-container">
-            <nav class="bottom-nav glass-panel">
+            <nav class="bottom-nav">
                 <button class="nav-btn active" data-tab="tab-profile">
                     <span class="nav-icon">👤</span>
                     <span class="nav-label">Профиль</span>
@@ -922,7 +977,7 @@
                     <button id="modalTgBtn" class="btn btn-secondary">
                         <span>💬 Написать</span>
                     </button>
-                    <button id="modalRobloxBtn" class="btn btn-primary">
+                    <button id="modalRobloxBtn" class="btn btn-neon-pink">
                         <span>🎮 Roblox</span>
                     </button>
                 </div>
@@ -938,8 +993,8 @@
             tg.ready();
             tg.expand();
             try {
-                tg.setHeaderColor('#080b11');
-                tg.setBackgroundColor('#080b11');
+                tg.setHeaderColor('#070712');
+                tg.setBackgroundColor('#070712');
             } catch (e) {}
         }
 
@@ -953,9 +1008,8 @@
 
         let allMembers = [];
         let currentMemberData = null;
-        let selectedModalMember = null;
 
-        // Открытие внешних ссылок через Telegram WebApp API без блокировок
+        // Открытие внешних ссылок через Telegram WebApp API
         function openExternalUrl(url) {
             if (tg && tg.openLink) {
                 tg.openLink(url);
@@ -964,12 +1018,101 @@
             }
         }
 
-        function openRobloxGame(placeId) {
+        // Запуск Roblox плейсов
+        function launchRobloxPlace(placeId) {
             if (tg?.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
+                tg.HapticFeedback.impactOccurred('heavy');
             }
-            openExternalUrl(`https://www.roblox.com/games/${placeId}`);
+            const robloxUrl = `https://www.roblox.com/games/${placeId}`;
+            openExternalUrl(robloxUrl);
         }
+
+        // ================== ИНТЕРАКТИВНЫЙ 3D СКИН (ВРАЩЕНИЕ 360°) ==================
+        const stage3D = document.getElementById('stage3D');
+        const skin3DWrapper = document.getElementById('skin3DWrapper');
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let currentRotationY = 0;
+        let currentRotationX = 0;
+        let velocityX = 0;
+        let animationFrame = null;
+        let autoRotate = true;
+
+        function update3DTransform() {
+            skin3DWrapper.style.transform = `rotateY(${currentRotationY}deg) rotateX(${-currentRotationX}deg) scale(1.05)`;
+        }
+
+        // Плавное авто-вращение по умолчанию
+        function renderLoop() {
+            if (autoRotate && !isDragging) {
+                currentRotationY += 0.4;
+                currentRotationX = Math.sin(Date.now() / 1000) * 3;
+                update3DTransform();
+            } else if (!isDragging && Math.abs(velocityX) > 0.05) {
+                currentRotationY += velocityX;
+                velocityX *= 0.95;
+                update3DTransform();
+            }
+            animationFrame = requestAnimationFrame(renderLoop);
+        }
+        renderLoop();
+
+        // Обработка Touch (для смартфонов)
+        stage3D.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            autoRotate = false;
+            velocityX = 0;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+
+            velocityX = deltaX * 0.8;
+            currentRotationY += deltaX * 0.8;
+            currentRotationX = Math.max(-15, Math.min(15, currentRotationX + deltaY * 0.4));
+            update3DTransform();
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+            // Через 4 секунды покоя возвращается плавное авто-вращение
+            setTimeout(() => { if (!isDragging) autoRotate = true; }, 4000);
+        });
+
+        // Обработка Мыши (для ПК)
+        stage3D.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            autoRotate = false;
+            velocityX = 0;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            velocityX = deltaX * 0.8;
+            currentRotationY += deltaX * 0.8;
+            currentRotationX = Math.max(-15, Math.min(15, currentRotationX + deltaY * 0.4));
+            update3DTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            setTimeout(() => { if (!isDragging) autoRotate = true; }, 4000);
+        });
 
         // ================== НАВИГАЦИЯ ПО ВКЛАДКАМ ==================
         const navButtons = document.querySelectorAll('.nav-btn');
@@ -1016,7 +1159,6 @@
 
         function renderProfile(member) {
             const displayName = member.name || member.full_name || tgUser.first_name;
-            document.getElementById('headerName').textContent = displayName;
 
             document.getElementById('profileSkinImg').src = member.avatar_url || DEFAULT_AVATAR;
             document.getElementById('profileName').textContent = displayName;
@@ -1044,7 +1186,6 @@
 
         function renderDefaultProfile() {
             const displayName = tgUser.first_name || "Участник";
-            document.getElementById('headerName').textContent = displayName;
             document.getElementById('profileName').textContent = displayName;
             document.getElementById('profileSkinImg').src = DEFAULT_AVATAR;
             document.getElementById('profileRobloxNick').textContent = tgUser.username ? `@${tgUser.username}` : "Скин не привязан";
@@ -1163,7 +1304,6 @@
         function openMemberModal(userId) {
             const member = allMembers.find(m => m.user_id === userId);
             if (!member) return;
-            selectedModalMember = member;
 
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
