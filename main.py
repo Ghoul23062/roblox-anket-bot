@@ -15,7 +15,8 @@ from aiogram.types import MenuButtonWebApp, WebAppInfo
 from config import BOT_TOKEN, WEBAPP_URL
 from handlers import router
 from logger_bot import send_log
-from database import init_db, get_all_members, get_member
+from database import init_db, get_all_members, get_member, add_or_update_member
+from roblox_api import get_roblox_user
 
 
 # ================== HTTP API & WEBAPP HANDLERS ==================
@@ -63,6 +64,46 @@ async def handle_api_member(request):
     return web.json_response({"found": False})
 
 
+async def handle_api_sync_roblox(request):
+    """
+    API: Привязка Roblox-аккаунта напрямую из WebApp.
+    """
+    try:
+        data = await request.json()
+        user_id = int(data.get("user_id", 0))
+        username = data.get("username", "")
+        full_name = data.get("full_name", "Участник")
+        roblox_nick = data.get("roblox_username", "").strip()
+
+        if not user_id or not roblox_nick:
+            return web.json_response({"success": False, "error": "Missing fields"})
+
+        r = await get_roblox_user(roblox_nick)
+        if not r:
+            return web.json_response({"success": False, "error": "Игрок с таким ником не найден в Roblox!"})
+
+        add_or_update_member(
+            user_id=user_id,
+            username=username,
+            full_name=full_name,
+            name=full_name,
+            age=0,
+            country="Не указана",
+            roblox_username=r["name"],
+            roblox_display_name=r["displayName"],
+            roblox_id=r["id"],
+            roblox_created=r["created_date"],
+            avatar_url=r["avatar_url"],
+            role="Участник"
+        )
+        saved_member = get_member(user_id)
+        return web.json_response({"success": True, "member": saved_member})
+
+    except Exception as e:
+        logging.error(f"Error in handle_api_sync_roblox: {e}")
+        return web.json_response({"success": False, "error": str(e)})
+
+
 async def start_web_server():
     """
     Запуск фонового веб-сервера для Telegram Mini App и Render Web Service.
@@ -73,6 +114,7 @@ async def start_web_server():
     # API маршруты
     app.router.add_get("/api/members", handle_api_members)
     app.router.add_get("/api/member", handle_api_member)
+    app.router.add_post("/api/sync", handle_api_sync_roblox)
     
     # WebApp маршруты
     app.router.add_get("/webapp", handle_webapp_index)
@@ -80,7 +122,7 @@ async def start_web_server():
     app.router.add_get("/", handle_webapp_index)
     app.router.add_get("/health", handle_health_check)
 
-    # Статические файлы (на случай прямого обращения к .css / .js)
+    # Статические файлы
     webapp_dir = os.path.join(os.path.dirname(__file__), "webapp")
     if os.path.exists(webapp_dir):
         app.router.add_static("/webapp/", path=webapp_dir, name="webapp_static")
