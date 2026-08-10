@@ -1,5 +1,6 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters.callback_data import CallbackData
+from config import WEBAPP_URL
 
 class AdminCallback(CallbackData, prefix="admin"):
     """
@@ -10,11 +11,22 @@ class AdminCallback(CallbackData, prefix="admin"):
 
 def get_start_keyboard() -> InlineKeyboardMarkup:
     """
-    Клавиатура под стартовым сообщением.
+    Клавиатура под стартовым сообщением с кнопкой подачи анкеты и кнопкой открытия Mini App.
     """
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📝 Подать анкету", callback_data="start_anketa")]
+            [
+                InlineKeyboardButton(
+                    text="📱 Открыть Хаус Апп",
+                    web_app=WebAppInfo(url=WEBAPP_URL)
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="📝 Подать анкету",
+                    callback_data="start_anketa"
+                )
+            ]
         ]
     )
 
