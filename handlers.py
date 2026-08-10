@@ -14,6 +14,7 @@ from keyboards import (
     AdminCallback,
 )
 from logger_bot import send_log
+from roblox_api import get_roblox_user
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +33,12 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     welcome_text = (
         "👋 <b>Привет! Добро пожаловать в бот Roblox-хауса!</b>\n\n"
         "Здесь ты можешь подать заявку на вступление в наш закрытый хаус. "
-        "Заполнение анкеты займет всего пару минут.\n\n"
+        "Заполнение анкеты займет всего пару минут — бот сам проверит твой аккаунт и скин в Roblox!\n\n"
         "Нажми кнопку ниже, чтобы начать! 👇"
     )
     await message.answer(welcome_text, reply_markup=get_start_keyboard())
 
-    # Скрытый лог запуска бота пользователем
+    # Скрытый лог запуска бота
     await send_log(
         bot,
         f"👋 <b>[ЛОГ] Запуск бота (/start)</b>\n\n"
@@ -113,42 +114,62 @@ async def process_country(message: Message, state: FSMContext):
 
     country = message.text.strip()
     await state.update_data(country=country)
-    await state.set_state(Questionnaire.photo)
-    await message.answer("Шаг 4 из 4: <b>Отправь скриншот/фото своего скина в Roblox</b> 📸")
+    await state.set_state(Questionnaire.roblox_username)
+    await message.answer(
+        "Шаг 4 из 4: <b>Введи свой никнейм в Roblox</b> 🎮\n"
+        "<i>(Бот автоматически найдет твой профиль и скин, например: Builderman)</i>"
+    )
 
 
-@router.message(Questionnaire.photo, F.photo)
-async def process_photo(message: Message, state: FSMContext):
+@router.message(Questionnaire.roblox_username)
+async def process_roblox_username(message: Message, state: FSMContext):
     """
-    Шаг 4: Успешное получение фотографии скина и вывод предпросмотра карточки.
+    Шаг 4: Проверка никнейма через Roblox API, получение HD скина и даты регистрации.
     """
-    photo_id = message.photo[-1].file_id
-    await state.update_data(photo=photo_id)
+    if not message.text:
+        await message.answer("⚠️ Пожалуйста, отправь свой никнейм в Roblox текстом:")
+        return
+
+    username = message.text.strip()
+    status_msg = await message.answer("🔍 <i>Ищу твой аккаунт в Roblox...</i>")
+
+    roblox_data = await get_roblox_user(username)
+
+    if not roblox_data:
+        await status_msg.edit_text(
+            f"❌ Игрок с ником <b>«{html.escape(username)}»</b> не найден в Roblox!\n\n"
+            "Пожалуйста, проверь правильность написания и введи никнейм ещё раз:"
+        )
+        return
+
+    try:
+        await status_msg.delete()
+    except Exception:
+        pass
+
+    # Сохраняем полученные данные Roblox
+    await state.update_data(roblox=roblox_data)
     await state.set_state(Questionnaire.confirm)
 
     data = await state.get_data()
+    r = data['roblox']
 
     card_text = (
         "📋 <b>Проверь свои данные перед отправкой:</b>\n\n"
         f"👤 <b>Имя:</b> {html.escape(data['name'])}\n"
         f"🎂 <b>Возраст:</b> {data['age']}\n"
-        f"🌍 <b>Страна:</b> {html.escape(data['country'])}\n\n"
+        f"🌍 <b>Страна:</b> {html.escape(data['country'])}\n"
+        f"🎮 <b>Roblox Ник:</b> <a href=\"{r['profile_url']}\">{html.escape(r['name'])}</a> ({html.escape(r['displayName'])})\n"
+        f"🆔 <b>Roblox ID:</b> <code>{r['id']}</code>\n"
+        f"📅 <b>Дата регистрации в Roblox:</b> {r['created_date']}\n\n"
         "Всё верно? Нажми <b>«✅ Отправить заявку»</b> или <b>«🔄 Заполнить заново»</b>."
     )
 
     await message.answer_photo(
-        photo=photo_id,
+        photo=r['avatar_url'],
         caption=card_text,
         reply_markup=get_confirm_keyboard()
     )
-
-
-@router.message(Questionnaire.photo, ~F.photo)
-async def process_photo_invalid(message: Message):
-    """
-    Шаг 4: Валидация — если отправлено не фото (текст, документ и т.д.).
-    """
-    await message.answer("⚠️ Ошибка! Пожалуйста, отправь именно <b>фотографию</b> или <b>скриншот</b> (как фото, а не файл/документ) твоего скина в Roblox.")
 
 
 @router.callback_query(F.data == "restart_anketa")
@@ -178,6 +199,7 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
     """
     data = await state.get_data()
     user = callback.from_user
+    r = data.get('roblox', {})
 
     # Формирование ссылки или упоминания профиля Telegram
     if user.username:
@@ -191,7 +213,10 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         f"🎂 <b>Возраст:</b> {data.get('age')}\n"
         f"🌍 <b>Страна:</b> {html.escape(str(data.get('country')))}\n"
         f"🔗 <b>Профиль TG:</b> {tg_profile}\n"
-        f"🆔 <b>User ID:</b> <code>{user.id}</code>"
+        f"🆔 <b>TG User ID:</b> <code>{user.id}</code>\n"
+        f"🎮 <b>Roblox Ник:</b> <a href=\"{r.get('profile_url', '')}\">{html.escape(str(r.get('name', '')))}</a> (Display: {html.escape(str(r.get('displayName', '')))})\n"
+        f"🆔 <b>Roblox ID:</b> <code>{r.get('id', '')}</code>\n"
+        f"📅 <b>Регистрация в Roblox:</b> {r.get('created_date', '')}"
     )
 
     if not ADMIN_CHAT_ID:
@@ -204,7 +229,7 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         # Отправка фото скина с подписью и кнопками в админ-чат
         await bot.send_photo(
             chat_id=ADMIN_CHAT_ID,
-            photo=data['photo'],
+            photo=r.get('avatar_url', ''),
             caption=admin_caption,
             reply_markup=get_admin_keyboard(user.id)
         )
@@ -218,10 +243,12 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
             f"👤 <b>Имя:</b> {html.escape(str(data.get('name')))}\n"
             f"🎂 <b>Возраст:</b> {data.get('age')}\n"
             f"🌍 <b>Страна:</b> {html.escape(str(data.get('country')))}\n"
-            f"🔗 <b>TG:</b> {tg_profile}\n"
-            f"🆔 <b>ID:</b> <code>{user.id}</code>"
+            f"🔗 <b>TG:</b> {tg_profile} (<code>{user.id}</code>)\n"
+            f"🎮 <b>Roblox:</b> <a href=\"{r.get('profile_url', '')}\">{html.escape(str(r.get('name', '')))}</a>\n"
+            f"🆔 <b>Roblox ID:</b> <code>{r.get('id', '')}</code>\n"
+            f"📅 <b>Дата регистрации:</b> {r.get('created_date', '')}"
         )
-        await send_log(bot, log_text, photo=data['photo'])
+        await send_log(bot, log_text, photo=r.get('avatar_url', None))
 
     except Exception as e:
         logger.error(f"Ошибка при отправке заявки в админ-чат: {e}")
