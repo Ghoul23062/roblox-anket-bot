@@ -35,7 +35,6 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = No
     """
     Проверяет права админа/создателя в текущем чате, в чате хауса или в админ-чате.
     """
-    # 1. Проверяем в текущем чате (если команда вызвана в группе)
     if chat_id and chat_id < 0:
         try:
             m = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
@@ -44,7 +43,6 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = No
         except Exception as e:
             logger.debug(f"Check chat {chat_id} error: {e}")
 
-    # 2. Проверяем в админ-чате
     if ADMIN_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=ADMIN_CHAT_ID, user_id=user_id)
@@ -53,7 +51,6 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = No
         except Exception:
             pass
 
-    # 3. Проверяем в чате хауса
     if HOUSE_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=HOUSE_CHAT_ID, user_id=user_id)
@@ -234,10 +231,58 @@ async def cmd_iam_admin(message: Message, bot: Bot):
     )
 
 
+@router.message(Command("iameditor", "iammonter", prefix="/!"), StateFilter("*"))
+async def cmd_iam_editor(message: Message, bot: Bot):
+    """
+    Регистрация монтажёра хауса: /iameditor <roblox_nick>
+    """
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: <code>/iameditor ТвойRobloxНик</code>\nПример: <code>/iameditor Builderman</code>")
+        return
+
+    roblox_nick = args[1].strip()
+    status_msg = await message.answer("🔍 <i>Ищу твой профиль в Roblox...</i>")
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await status_msg.edit_text(f"❌ Ник Roblox «{html.escape(roblox_nick)}» не найден!")
+        return
+
+    user = message.from_user
+    add_or_update_member(
+        user_id=user.id,
+        username=user.username or "",
+        full_name=user.full_name or "Монтажёр",
+        name=user.first_name or "Монтажёр",
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role="Монтажёр"
+    )
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🎬 Открыть свой профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await status_msg.edit_text(
+        f"🎬 <b>Ты успешно добавлен как МОНТАЖЁР хауса!</b>\n\n"
+        f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
+        f"🆔 ID: <code>{r['id']}</code>\n"
+        "Твой профиль теперь сияет бирюзовым цветом с бейджем 🎬 Монтажёр!",
+        reply_markup=kb
+    )
+
+
 @router.message(Command("add", prefix="/!"), StateFilter("*"))
 async def cmd_add_member(message: Message, bot: Bot):
     """
-    Команда для добавления участника/админа вручную (только для админов чата!).
+    Команда для добавления участника/админа/монтажёра вручную (только для админов чата!).
     """
     user = message.from_user
     has_rights, _ = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
@@ -248,7 +293,7 @@ async def cmd_add_member(message: Message, bot: Bot):
 
     args = message.text.split(maxsplit=4)
     if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Создатель</code>")
+        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nРоли: <code>Создатель</code>, <code>Администратор</code>, <code>Монтажёр</code>, <code>Участник</code>\nПример: <code>/add 123456789 Builderman Назар Создатель</code>")
         return
 
     try:
@@ -280,7 +325,7 @@ async def cmd_add_member(message: Message, bot: Bot):
         avatar_url=r["avatar_url"],
         role=role
     )
-    await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
+    await message.answer(f"✅ Пользователь <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
 
 
 @router.message(Command("setrole", prefix="/!"), StateFilter("*"))
@@ -297,7 +342,7 @@ async def cmd_set_role(message: Message, bot: Bot):
 
     args = message.text.split(maxsplit=2)
     if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Создатель</code>")
+        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nРоли: <code>Создатель</code>, <code>Администратор</code>, <code>Монтажёр</code>, <code>Участник</code>\nНапример: <code>/setrole 123456789 Монтажёр</code>")
         return
 
     try:
@@ -334,7 +379,8 @@ async def cmd_members_list(message: Message):
 
     text = f"👥 <b>Участники хауса NEON BLUR (Всего: {count}):</b>\n\n"
     for i, m in enumerate(members[:15], 1):
-        role_icon = "👑" if m.get("role") == "Создатель" else ("🛡️" if m.get("role") == "Администратор" else "✨")
+        role = m.get("role", "Участник")
+        role_icon = "👑" if role == "Создатель" else ("🛡️" if role == "Администратор" else ("🎬" if role in ("Монтажёр", "Монтажер") else "✨"))
         text += f"{i}. {role_icon} <b>{html.escape(m.get('name', ''))}</b> (@{html.escape(m.get('roblox_username', ''))})\n"
 
     if count > 15:
