@@ -379,6 +379,64 @@ async def cmd_set_role(message: Message, bot: Bot):
         await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден в базе.")
 
 
+@router.message(Command("say", "echo", prefix="/!"), StateFilter("*"))
+async def cmd_say(message: Message, bot: Bot):
+    """
+    Команда /say для отправки сообщений от имени бота (только для админов/создателя).
+    Использование: 
+    - /say Текст (в чате группы отправляет текст от бота)
+    - /say CHAT_ID Текст (отправка в конкретный чат из ЛС)
+    - /say Текст (ответом на сообщение)
+    """
+    user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b> Отправка сообщений от бота доступна только администраторам.")
+        return
+
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer(
+            "⚠️ <b>Использование команды /say:</b>\n\n"
+            "1. Напиши в чате: <code>/say Ваш текст</code>\n"
+            "2. Или ответь этой командой на чье-то сообщение в группе.\n"
+            "3. Чтобы отправить в другой чат из ЛС: <code>/say -1001234567890 Ваш текст</code>"
+        )
+        return
+
+    raw_text = args[1].strip()
+    target_chat_id = message.chat.id
+    reply_to_id = message.reply_to_message.message_id if message.reply_to_message else None
+
+    # Если отправляем из ЛС и первым аргументом передан ID чата
+    first_part = raw_text.split(maxsplit=1)
+    if len(first_part) > 1 and (first_part[0].startswith("-100") or first_part[0].isdigit()):
+        try:
+            target_chat_id = int(first_part[0])
+            raw_text = first_part[1]
+            reply_to_id = None
+        except ValueError:
+            pass
+
+    try:
+        # Пытаемся удалить команду админа из группы для чистоты
+        if message.chat.type != "private":
+            try:
+                await message.delete()
+            except Exception:
+                pass
+
+        await bot.send_message(
+            chat_id=target_chat_id,
+            text=raw_text,
+            reply_to_message_id=reply_to_id
+        )
+    except Exception as e:
+        logger.error(f"Error in /say command: {e}")
+        await message.answer(f"❌ Ошибка отправки сообщения: {e}")
+
+
 @router.message(
     F.text.lower().startswith(("/members", "!members", "участники")),
     StateFilter("*")
