@@ -1,11 +1,11 @@
 import html
 import logging
 from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-from config import ADMIN_CHAT_ID, HOUSE_CHAT_ID
+from config import ADMIN_CHAT_ID, HOUSE_CHAT_ID, WEBAPP_URL
 from states import Questionnaire
 from keyboards import (
     get_start_keyboard,
@@ -15,16 +15,20 @@ from keyboards import (
 )
 from logger_bot import send_log
 from roblox_api import get_roblox_user
+from database import add_or_update_member, update_member_role, get_member_count, get_all_members
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 
+# Кэш последних заявок в памяти: {user_id: data_dict}
+PENDING_APPLICATIONS = {}
+
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     """
-    Обработчик команды /start. Приветствие и кнопка подачи анкеты.
+    Обработчик команды /start. Приветствие, кнопка запуска Mini App и подачи анкеты.
     """
     await state.clear()
     user = message.from_user
@@ -32,9 +36,8 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
 
     welcome_text = (
         "👋 <b>Привет! Добро пожаловать в бот Roblox-хауса!</b>\n\n"
-        "Здесь ты можешь подать заявку на вступление в наш закрытый хаус. "
-        "Заполнение анкеты займет всего пару минут — бот сам проверит твой аккаунт и скин в Roblox!\n\n"
-        "Нажми кнопку ниже, чтобы начать! 👇"
+        "Здесь ты можешь открыть наше <b>фирменное мини-приложение</b> или подать заявку на вступление в хаус.\n\n"
+        "Выбирай действие ниже! 👇"
     )
     await message.answer(welcome_text, reply_markup=get_start_keyboard())
 
@@ -45,6 +48,19 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
         f"👤 <b>Пользователь:</b> {user_mention}\n"
         f"🆔 <b>ID:</b> <code>{user.id}</code>"
     )
+
+
+@router.message(Command("app"))
+async def cmd_open_app(message: Message):
+    """
+    Быстрая команда /app для открытия Telegram Mini App.
+    """
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📱 Открыть Хаус Апп", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await message.answer("🏰 <b>Нажми на кнопку ниже, чтобы открыть приложение хауса:</b>", reply_markup=kb)
 
 
 @router.callback_query(F.data == "start_anketa")
@@ -60,7 +76,6 @@ async def start_questionnaire(callback: CallbackQuery, state: FSMContext, bot: B
     user = callback.from_user
     user_mention = f"@{user.username}" if user.username else f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
     
-    # Скрытый лог начала анкеты
     await send_log(
         bot,
         f"📝 <b>[ЛОГ] Начато заполнение анкеты</b>\n\n"
@@ -201,7 +216,21 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
     user = callback.from_user
     r = data.get('roblox', {})
 
-    # Формирование ссылки или упоминания профиля Telegram
+    # Сохраняем во временный кэш для моментального сохранения в БД при принятии
+    PENDING_APPLICATIONS[user.id] = {
+        "user_id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "name": data.get("name", user.first_name),
+        "age": data.get("age", 0),
+        "country": data.get("country", "Не указана"),
+        "roblox_username": r.get("name", ""),
+        "roblox_display_name": r.get("displayName", ""),
+        "roblox_id": r.get("id", 0),
+        "roblox_created": r.get("created_date", ""),
+        "avatar_url": r.get("avatar_url", "")
+    }
+
     if user.username:
         tg_profile = f"@{user.username}"
     else:
@@ -226,7 +255,6 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         return
 
     try:
-        # Отправка фото скина с подписью и кнопками в админ-чат
         await bot.send_photo(
             chat_id=ADMIN_CHAT_ID,
             photo=r.get('avatar_url', ''),
@@ -237,7 +265,7 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         await state.clear()
         await callback.answer("Заявка отправлена!")
 
-        # Дублирование лога в скрытый канал
+        # Дублирование в канал логов
         log_text = (
             "📥 <b>[ЛОГ] Новая заявка отправлена в админ-чат</b>\n\n"
             f"👤 <b>Имя:</b> {html.escape(str(data.get('name')))}\n"
@@ -254,12 +282,6 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         logger.error(f"Ошибка при отправке заявки в админ-чат: {e}")
         await callback.message.answer("❌ Не удалось отправить заявку. Пожалуйста, попробуйте позже.")
         await callback.answer("Ошибка при отправке", show_alert=True)
-        await send_log(
-            bot,
-            f"⚠️ <b>[ОШИБКА] Не удалось отправить заявку в админ-чат</b>\n\n"
-            f"👤 <b>Кандидат:</b> {tg_profile} (<code>{user.id}</code>)\n"
-            f"❗ <b>Ошибка:</b> <code>{html.escape(str(e))}</code>"
-        )
 
 
 @router.callback_query(AdminCallback.filter())
@@ -288,22 +310,47 @@ async def handle_admin_decision(
             return
 
         try:
-            # Генерация персональной одноразовой ссылки на вступление (member_limit=1)
+            # 1. Генерация персональной одноразовой ссылки
             invite_link = await bot.create_chat_invite_link(
                 chat_id=HOUSE_CHAT_ID,
                 member_limit=1
             )
 
-            # Отправка пользователю ссылки в ЛС
+            # 2. Сохранение участника в базу данных SQLite
+            app_data = PENDING_APPLICATIONS.get(applicant_id)
+            if app_data:
+                add_or_update_member(
+                    user_id=app_data["user_id"],
+                    username=app_data.get("username"),
+                    full_name=app_data.get("full_name", ""),
+                    name=app_data.get("name", "Участник"),
+                    age=app_data.get("age", 0),
+                    country=app_data.get("country", ""),
+                    roblox_username=app_data.get("roblox_username", ""),
+                    roblox_display_name=app_data.get("roblox_display_name", ""),
+                    roblox_id=app_data.get("roblox_id", 0),
+                    roblox_created=app_data.get("roblox_created", ""),
+                    avatar_url=app_data.get("avatar_url", ""),
+                    role="Участник"
+                )
+
+            # 3. Отправка пользователю ссылки в ЛС с кнопкой Mini App
+            kb = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="📱 Открыть Хаус Апп", web_app=WebAppInfo(url=WEBAPP_URL))]
+                ]
+            )
             await bot.send_message(
                 chat_id=applicant_id,
                 text=(
-                    "Поздравляем! Твоя заявка в Roblox-хаус одобрена! 🎉\n"
-                    f"Вот твоя личная одноразовая ссылка для входа в чат: {invite_link.invite_link}"
-                )
+                    "Поздравляем! Твоя заявка в Roblox-хаус одобрена! 🎉\n\n"
+                    f"Вот твоя личная одноразовая ссылка для входа в чат: {invite_link.invite_link}\n\n"
+                    "Также тебе открыт доступ в наше мини-приложение хауса! 👇"
+                ),
+                reply_markup=kb
             )
 
-            # Обновление сообщения в админ-чате
+            # 4. Обновление сообщения в админ-чате
             new_caption = (
                 f"{original_caption}\n\n"
                 f"✅ <b>Заявка принята</b> администратором {admin_mention}"
@@ -311,7 +358,7 @@ async def handle_admin_decision(
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка успешно принята!")
 
-            # Скрытый лог принятия
+            # 5. Скрытый лог принятия
             await send_log(
                 bot,
                 f"✅ <b>[РЕШЕНИЕ] Заявка ПРИНЯТА</b>\n\n"
@@ -326,23 +373,14 @@ async def handle_admin_decision(
                 "❌ Ошибка! Проверьте, добавлен ли бот в хаус-чат с правами создания пригласительных ссылок.",
                 show_alert=True
             )
-            await send_log(
-                bot,
-                f"⚠️ <b>[ОШИБКА] Сбой при принятии заявки</b>\n\n"
-                f"👑 <b>Администратор:</b> {admin_mention}\n"
-                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>\n"
-                f"❗ <b>Ошибка:</b> <code>{html.escape(str(e))}</code>"
-            )
 
     elif action == "reject":
         try:
-            # Отправка уведомления пользователю
             await bot.send_message(
                 chat_id=applicant_id,
                 text="К сожалению, твоя заявка в Roblox-хаус была отклонена. 😔"
             )
 
-            # Обновление сообщения в админ-чате
             new_caption = (
                 f"{original_caption}\n\n"
                 f"❌ <b>Заявка отклонена</b> администратором {admin_mention}"
@@ -350,7 +388,6 @@ async def handle_admin_decision(
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка отклонена!")
 
-            # Скрытый лог отклонения
             await send_log(
                 bot,
                 f"❌ <b>[РЕШЕНИЕ] Заявка ОТКЛОНЕНА</b>\n\n"
@@ -362,15 +399,122 @@ async def handle_admin_decision(
             logger.error(f"Ошибка при отклонении заявки для {applicant_id}: {e}")
             new_caption = (
                 f"{original_caption}\n\n"
-                f"❌ <b>Заявка отклонена</b> администратором {admin_mention} (не удалось отправить ЛС пользователю)"
+                f"❌ <b>Заявка отклонена</b> администратором {admin_mention}"
             )
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
-            await callback.answer("Заявка отклонена (пользователь заблокировал бота).")
+            await callback.answer("Заявка отклонена.")
 
-            await send_log(
-                bot,
-                f"❌ <b>[РЕШЕНИЕ] Заявка ОТКЛОНЕНА (с предупреждением)</b>\n\n"
-                f"👑 <b>Администратор:</b> {admin_mention}\n"
-                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>\n"
-                f"⚠️ <i>Не удалось доставить ЛС пользователю (возможно бот заблокирован)</i>"
-            )
+
+# ================== КОМАНДЫ ДЛЯ СУЩЕСТВУЮЩИХ УЧАСТНИКОВ ==================
+
+@router.message(Command("sync"))
+async def cmd_sync_profile(message: Message):
+    """
+    Команда /sync <roblox_nick> — для действующих участников хауса, чтобы быстро привязать скин.
+    """
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: <code>/sync ТвойRobloxНик</code>\nНапример: <code>/sync Builderman</code>")
+        return
+
+    roblox_nick = args[1].strip()
+    status_msg = await message.answer("🔍 <i>Синхронизирую твой аккаунт с Roblox...</i>")
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await status_msg.edit_text(f"❌ Игрок <b>«{html.escape(roblox_nick)}»</b> не найден в Roblox!")
+        return
+
+    user = message.from_user
+    add_or_update_member(
+        user_id=user.id,
+        username=user.username,
+        full_name=user.full_name,
+        name=user.first_name,
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role="Участник"
+    )
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📱 Открыть Хаус Апп", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await status_msg.edit_text(
+        f"✅ <b>Профиль успешно синхронизирован!</b>\n\n"
+        f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
+        f"🆔 ID: <code>{r['id']}</code>\n\n"
+        "Теперь ты отображаешься в приложении хауса! 👇",
+        reply_markup=kb
+    )
+
+
+@router.message(Command("add"))
+async def cmd_add_member(message: Message):
+    """
+    Команда для администраторов: /add <user_id> <roblox_nick> [Имя] [Роль]
+    """
+    args = message.text.split(maxsplit=4)
+    if len(args) < 3:
+        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Участник</code>")
+        return
+
+    try:
+        user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ USER_ID должен быть числом!")
+        return
+
+    roblox_nick = args[2]
+    name = args[3] if len(args) > 3 else "Участник"
+    role = args[4] if len(args) > 4 else "Участник"
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await message.answer(f"❌ Ник Roblox «{roblox_nick}» не найден!")
+        return
+
+    add_or_update_member(
+        user_id=user_id,
+        username="",
+        full_name=name,
+        name=name,
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role=role
+    )
+    await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
+
+
+@router.message(Command("setrole"))
+async def cmd_set_role(message: Message):
+    """
+    Команда для изменения роли участника: /setrole USER_ID РОЛЬ (Участник / Администратор / Создатель)
+    """
+    args = message.text.split(maxsplit=2)
+    if len(args) < 3:
+        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Администратор</code>")
+        return
+
+    try:
+        user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ USER_ID должен быть числом!")
+        return
+
+    role = args[2].strip()
+    if update_member_role(user_id, role):
+        await message.answer(f"✅ Роль пользователя <code>{user_id}</code> обновлена на <b>«{html.escape(role)}»</b>!")
+    else:
+        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден в базе.")
