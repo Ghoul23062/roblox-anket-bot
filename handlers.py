@@ -30,6 +30,19 @@ router = Router()
 
 PENDING_APPLICATIONS = {}
 
+BOT_STARTAPP_URL = "https://t.me/anket_123bot?startapp=house"
+
+
+def get_app_button(chat_type: str, text: str = "💖 Открыть NEON BLUR App"):
+    """
+    Генерирует правильную кнопку:
+    - Для ЛС: WebAppInfo
+    - Для групп: Прямая ссылка t.me/anket_123bot?startapp=house (так как Telegram запрещает web_app кнопки в группах)
+    """
+    if chat_type == "private":
+        return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=WEBAPP_URL))
+    return InlineKeyboardButton(text=text, url=BOT_STARTAPP_URL)
+
 
 async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = None) -> tuple[bool, str]:
     """
@@ -109,18 +122,19 @@ async def cmd_open_app(message: Message):
     Команда /app, /house, /menu, !app в группах и ЛС.
     """
     count = get_member_count()
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="💖 Открыть NEON BLUR App", web_app=WebAppInfo(url=WEBAPP_URL))]
-        ]
-    )
+    btn = get_app_button(message.chat.type, "💖 Открыть NEON BLUR App")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
     text = (
         "🏰 <b>NEON BLUR • Официальное приложение хауса</b>\n\n"
         f"👥 Участников в хаусе: <b>{count}</b>\n"
         "🎮 Игры: <b>Murder Mystery 2</b> и <b>TTD 3</b>\n\n"
         "<i>Нажми кнопку ниже, чтобы открыть 3D профили и список тусовки:</i>"
     )
-    await message.answer(text, reply_markup=kb)
+    try:
+        await message.answer(text, reply_markup=kb)
+    except Exception as e:
+        logger.error(f"Error sending app message: {e}")
 
 
 @router.message(Command("iamcreator", prefix="/!"), StateFilter("*"))
@@ -163,11 +177,9 @@ async def cmd_iam_creator(message: Message, bot: Bot):
         role="Создатель"
     )
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="👑 Открыть свой VIP профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
-        ]
-    )
+    btn = get_app_button(message.chat.type, "👑 Открыть свой VIP профиль")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
     await status_msg.edit_text(
         f"👑 <b>Ты успешно добавлен как СОЗДАТЕЛЬ хауса!</b>\n\n"
         f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
@@ -217,11 +229,9 @@ async def cmd_iam_admin(message: Message, bot: Bot):
         role="Администратор"
     )
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🛡️ Открыть свой профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
-        ]
-    )
+    btn = get_app_button(message.chat.type, "🛡️ Открыть свой профиль")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
     await status_msg.edit_text(
         f"🛡️ <b>Ты успешно добавлен как АДМИНИСТРАТОР хауса!</b>\n\n"
         f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
@@ -265,11 +275,9 @@ async def cmd_iam_editor(message: Message, bot: Bot):
         role="Монтажёр"
     )
 
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🎬 Открыть свой профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
-        ]
-    )
+    btn = get_app_button(message.chat.type, "🎬 Открыть свой профиль")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
     await status_msg.edit_text(
         f"🎬 <b>Ты успешно добавлен как МОНТАЖЁР хауса!</b>\n\n"
         f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
@@ -368,11 +376,9 @@ async def cmd_members_list(message: Message):
     """
     members = get_all_members()
     count = len(members)
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="👥 Открыть список в App", web_app=WebAppInfo(url=WEBAPP_URL))]
-        ]
-    )
+    btn = get_app_button(message.chat.type, "👥 Открыть список в App")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
     if count == 0:
         await message.answer("👥 В базе пока нет утвержденных участников.", reply_markup=kb)
         return
@@ -450,7 +456,7 @@ async def process_country(message: Message, state: FSMContext):
     Шаг 3: Получение страны.
     """
     if not message.text:
-        await message.answer("Пожалуйста, укажи страну текстом:")
+        await message.answer("Пожалуйста, укасти страну текстом:")
         return
 
     country = message.text.strip()
@@ -670,11 +676,9 @@ async def handle_admin_decision(
                     role="Участник"
                 )
 
-            kb = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text="📱 Открыть NEON BLUR", web_app=WebAppInfo(url=WEBAPP_URL))]
-                ]
-            )
+            btn = get_app_button("private", "📱 Открыть NEON BLUR")
+            kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
             await bot.send_message(
                 chat_id=applicant_id,
                 text=(
