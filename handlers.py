@@ -31,10 +31,20 @@ router = Router()
 PENDING_APPLICATIONS = {}
 
 
-async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, str]:
+async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = None) -> tuple[bool, str]:
     """
-    Проверяет, является ли пользователь администратором или создателем в админ-чате или чате хауса.
+    Проверяет права админа/создателя в текущем чате, в чате хауса или в админ-чате.
     """
+    # 1. Проверяем в текущем чате (если команда вызвана в группе)
+    if chat_id and chat_id < 0:
+        try:
+            m = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+            if m.status in ("creator", "administrator"):
+                return True, m.status
+        except Exception as e:
+            logger.debug(f"Check chat {chat_id} error: {e}")
+
+    # 2. Проверяем в админ-чате
     if ADMIN_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=ADMIN_CHAT_ID, user_id=user_id)
@@ -43,6 +53,7 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, st
         except Exception:
             pass
 
+    # 3. Проверяем в чате хауса
     if HOUSE_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=HOUSE_CHAT_ID, user_id=user_id)
@@ -52,6 +63,23 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, st
             pass
 
     return False, "member"
+
+
+def is_app_trigger(message: Message) -> bool:
+    """
+    Универсальная проверка для вызова приложения в группах и ЛС.
+    """
+    if not message.text:
+        return False
+    text = message.text.lower().strip()
+    triggers = (
+        "/app", "!app", "/house", "!house", "/menu", "!menu",
+        "хаус апп", "приложение", "хаус", "app"
+    )
+    for t in triggers:
+        if text.startswith(t):
+            return True
+    return False
 
 
 @router.message(CommandStart(), StateFilter("*"))
@@ -78,13 +106,10 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     )
 
 
-@router.message(
-    F.text.lower().startswith(("/app", "!app", "/house", "!house", "/menu", "!menu", "хаус апп", "приложение")),
-    StateFilter("*")
-)
+@router.message(is_app_trigger, StateFilter("*"))
 async def cmd_open_app(message: Message):
     """
-    Команда /app, /house, /menu, !app, а также по ключевым фразам (работает везде: в ЛС, группах и супергруппах).
+    Команда /app, /house, /menu, !app в группах и ЛС.
     """
     count = get_member_count()
     kb = InlineKeyboardMarkup(
@@ -101,13 +126,13 @@ async def cmd_open_app(message: Message):
     await message.answer(text, reply_markup=kb)
 
 
-@router.message(Command("iamcreator"), StateFilter("*"))
+@router.message(Command("iamcreator", prefix="/!"), StateFilter("*"))
 async def cmd_iam_creator(message: Message, bot: Bot):
     """
     Регистрация создателя хауса (только для владельцев и администраторов чата!).
     """
     user = message.from_user
-    has_rights, status = await is_telegram_admin_or_creator(bot, user.id)
+    has_rights, status = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
 
     if not has_rights:
         await message.answer("❌ <b>Доступ запрещен!</b>\nЭту команду могут использовать только владельцы и администраторы чата хауса.")
@@ -155,13 +180,13 @@ async def cmd_iam_creator(message: Message, bot: Bot):
     )
 
 
-@router.message(Command("iamadmin"), StateFilter("*"))
+@router.message(Command("iamadmin", prefix="/!"), StateFilter("*"))
 async def cmd_iam_admin(message: Message, bot: Bot):
     """
     Регистрация администратора (только для людей с правами администратора в чате!).
     """
     user = message.from_user
-    has_rights, status = await is_telegram_admin_or_creator(bot, user.id)
+    has_rights, status = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
 
     if not has_rights:
         await message.answer("❌ <b>Доступ запрещен!</b>\nЭту команду могут использовать только администраторы чата хауса.")
@@ -209,13 +234,13 @@ async def cmd_iam_admin(message: Message, bot: Bot):
     )
 
 
-@router.message(Command("add"), StateFilter("*"))
+@router.message(Command("add", prefix="/!"), StateFilter("*"))
 async def cmd_add_member(message: Message, bot: Bot):
     """
     Команда для добавления участника/админа вручную (только для админов чата!).
     """
     user = message.from_user
-    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id)
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
 
     if not has_rights:
         await message.answer("❌ <b>Доступ запрещен!</b> Команда доступна только администраторам чата.")
@@ -258,13 +283,13 @@ async def cmd_add_member(message: Message, bot: Bot):
     await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
 
 
-@router.message(Command("setrole"), StateFilter("*"))
+@router.message(Command("setrole", prefix="/!"), StateFilter("*"))
 async def cmd_set_role(message: Message, bot: Bot):
     """
     Команда изменения роли (только для админов чата!).
     """
     user = message.from_user
-    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id)
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
 
     if not has_rights:
         await message.answer("❌ <b>Доступ запрещен!</b> Команда доступна только администраторам чата.")
