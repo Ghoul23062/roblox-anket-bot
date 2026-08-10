@@ -41,10 +41,10 @@
             --radius-full: 9999px;
         }
 
-        /* ПОЛНОЕ СКРЫТИЕ СКРОЛЛБАРА ДЛЯ ВСЕХ БРАУЗЕРОВ И СИСТЕМ */
+        /* ПОЛНОЕ СКРЫТИЕ СКРОЛЛБАРА */
         html, body, * {
-            -ms-overflow-style: none !important;  /* IE и Edge */
-            scrollbar-width: none !important;  /* Firefox */
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
         }
 
         html::-webkit-scrollbar, 
@@ -193,7 +193,7 @@
             position: relative;
             width: 220px;
             height: 220px;
-            margin: 0 auto 10px;
+            margin: 0 auto 16px;
             perspective: 1000px;
             cursor: grab;
         }
@@ -236,20 +236,6 @@
             object-fit: contain;
             filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 42, 141, 0.3));
             pointer-events: none;
-        }
-
-        .rotate-hint {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            background: rgba(0, 240, 255, 0.08);
-            border: 1px solid rgba(0, 240, 255, 0.25);
-            padding: 4px 12px;
-            border-radius: var(--radius-full);
-            margin-bottom: 14px;
         }
 
         .profile-titles {
@@ -775,11 +761,6 @@
                         <div class="skin-3d-wrapper" id="skin3DWrapper">
                             <img id="profileSkinImg" class="skin-3d-img" src="https://tr.rbxcdn.com/30DAY-Avatar-882C70E071E5997E51F8CB373002AFC3-Png/720/720/Avatar/Png/noFilter" alt="Roblox 3D Skin">
                         </div>
-                    </div>
-
-                    <div class="rotate-hint">
-                        <span>🖐️</span>
-                        <span>Крути скин пальцем / мышкой</span>
                     </div>
                     
                     <div class="profile-titles">
