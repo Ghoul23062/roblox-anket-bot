@@ -31,6 +31,32 @@ router = Router()
 PENDING_APPLICATIONS = {}
 
 
+async def is_telegram_admin_or_creator(bot: Bot, user_id: int) -> tuple[bool, str]:
+    """
+    Проверяет, является ли пользователь администратором или создателем в админ-чате или чате хауса.
+    Возвращает (is_admin, status_role) -> ("creator", "administrator" или "member").
+    """
+    # 1. Проверяем в админ-чате
+    if ADMIN_CHAT_ID:
+        try:
+            m = await bot.get_chat_member(chat_id=ADMIN_CHAT_ID, user_id=user_id)
+            if m.status in ("creator", "administrator"):
+                return True, m.status
+        except Exception:
+            pass
+
+    # 2. Проверяем в чате хауса
+    if HOUSE_CHAT_ID:
+        try:
+            m = await bot.get_chat_member(chat_id=HOUSE_CHAT_ID, user_id=user_id)
+            if m.status in ("creator", "administrator"):
+                return True, m.status
+        except Exception:
+            pass
+
+    return False, "member"
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     """
@@ -76,10 +102,17 @@ async def cmd_open_app(message: Message):
 
 
 @router.message(Command("iamcreator"))
-async def cmd_iam_creator(message: Message):
+async def cmd_iam_creator(message: Message, bot: Bot):
     """
-    Быстрая регистрация создателя хауса: /iamcreator <roblox_nick>
+    Регистрация создателя хауса (только для владельцев и администраторов чата!).
     """
+    user = message.from_user
+    has_rights, status = await is_telegram_admin_or_creator(bot, user.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b>\nЭту команду могут использовать только владельцы и администраторы чата хауса.")
+        return
+
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.answer("⚠️ Использование: <code>/iamcreator ТвойRobloxНик</code>\nПример: <code>/iamcreator Builderman</code>")
@@ -93,7 +126,6 @@ async def cmd_iam_creator(message: Message):
         await status_msg.edit_text(f"❌ Ник Roblox «{html.escape(roblox_nick)}» не найден!")
         return
 
-    user = message.from_user
     add_or_update_member(
         user_id=user.id,
         username=user.username or "",
@@ -124,10 +156,17 @@ async def cmd_iam_creator(message: Message):
 
 
 @router.message(Command("iamadmin"))
-async def cmd_iam_admin(message: Message):
+async def cmd_iam_admin(message: Message, bot: Bot):
     """
-    Быстрая регистрация администратора: /iamadmin <roblox_nick>
+    Регистрация администратора (только для людей с правами администратора в чате!).
     """
+    user = message.from_user
+    has_rights, status = await is_telegram_admin_or_creator(bot, user.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b>\nЭту команду могут использовать только администраторы чата хауса.")
+        return
+
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         await message.answer("⚠️ Использование: <code>/iamadmin ТвойRobloxНик</code>\nПример: <code>/iamadmin Builderman</code>")
@@ -141,7 +180,6 @@ async def cmd_iam_admin(message: Message):
         await status_msg.edit_text(f"❌ Ник Roblox «{html.escape(roblox_nick)}» не найден!")
         return
 
-    user = message.from_user
     add_or_update_member(
         user_id=user.id,
         username=user.username or "",
@@ -169,6 +207,85 @@ async def cmd_iam_admin(message: Message):
         "Твой профиль теперь выделяется неоново-розовым цветом в приложении! 💖",
         reply_markup=kb
     )
+
+
+@router.message(Command("add"))
+async def cmd_add_member(message: Message, bot: Bot):
+    """
+    Команда для добавления участника/админа вручную (только для админов чата!).
+    """
+    user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b> Команда доступна только администраторам чата.")
+        return
+
+    args = message.text.split(maxsplit=4)
+    if len(args) < 3:
+        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Создатель</code>")
+        return
+
+    try:
+        user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ USER_ID должен быть числом!")
+        return
+
+    roblox_nick = args[2]
+    name = args[3] if len(args) > 3 else "Участник"
+    role = args[4] if len(args) > 4 else "Участник"
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await message.answer(f"❌ Ник Roblox «{roblox_nick}» не найден!")
+        return
+
+    add_or_update_member(
+        user_id=user_id,
+        username="",
+        full_name=name,
+        name=name,
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role=role
+    )
+    await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
+
+
+@router.message(Command("setrole"))
+async def cmd_set_role(message: Message, bot: Bot):
+    """
+    Команда изменения роли (только для админов чата!).
+    """
+    user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b> Команда доступна только администраторам чата.")
+        return
+
+    args = message.text.split(maxsplit=2)
+    if len(args) < 3:
+        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Создатель</code>")
+        return
+
+    try:
+        user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ USER_ID должен быть числом!")
+        return
+
+    role = args[2].strip()
+    if update_member_role(user_id, role):
+        await message.answer(f"✅ Роль пользователя <code>{user_id}</code> обновлена на <b>«{html.escape(role)}»</b>!")
+    else:
+        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден в базе.")
 
 
 @router.message(Command("members"))
@@ -546,70 +663,3 @@ async def handle_admin_decision(
             )
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка отклонена.")
-
-
-# ================== КОМАНДЫ ДЛЯ АДМИНИСТРАТОРОВ ==================
-
-@router.message(Command("add"))
-async def cmd_add_member(message: Message):
-    """
-    Команда для администраторов: /add USER_ID ROBLOX_NICK [Имя] [Роль]
-    """
-    args = message.text.split(maxsplit=4)
-    if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Создатель</code>")
-        return
-
-    try:
-        user_id = int(args[1])
-    except ValueError:
-        await message.answer("❌ USER_ID должен быть числом!")
-        return
-
-    roblox_nick = args[2]
-    name = args[3] if len(args) > 3 else "Участник"
-    role = args[4] if len(args) > 4 else "Участник"
-
-    r = await get_roblox_user(roblox_nick)
-    if not r:
-        await message.answer(f"❌ Ник Roblox «{roblox_nick}» не найден!")
-        return
-
-    add_or_update_member(
-        user_id=user_id,
-        username="",
-        full_name=name,
-        name=name,
-        age=0,
-        country="Не указана",
-        roblox_username=r["name"],
-        roblox_display_name=r["displayName"],
-        roblox_id=r["id"],
-        roblox_created=r["created_date"],
-        avatar_url=r["avatar_url"],
-        role=role
-    )
-    await message.answer(f"✅ Участник <b>{html.escape(name)}</b> (Roblox: <code>{r['name']}</code>, Роль: <b>{role}</b>) успешно добавлен в базу и приложение!")
-
-
-@router.message(Command("setrole"))
-async def cmd_set_role(message: Message):
-    """
-    Команда для изменения роли: /setrole USER_ID РОЛЬ (Создатель / Администратор / Участник)
-    """
-    args = message.text.split(maxsplit=2)
-    if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Создатель</code>")
-        return
-
-    try:
-        user_id = int(args[1])
-    except ValueError:
-        await message.answer("❌ USER_ID должен быть числом!")
-        return
-
-    role = args[2].strip()
-    if update_member_role(user_id, role):
-        await message.answer(f"✅ Роль пользователя <code>{user_id}</code> обновлена на <b>«{html.escape(role)}»</b>!")
-    else:
-        await message.answer(f"❌ Пользователь <code>{user_id}</code> не найден в базе.")
