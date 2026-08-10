@@ -75,16 +75,16 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = No
     return False, "member"
 
 
-def is_app_trigger(message: Message) -> bool:
+def is_app_text_trigger(message: Message) -> bool:
     """
-    Универсальная проверка для вызова приложения в группах и ЛС.
+    Дополнительная проверка для текстовых триггеров (не команд).
     """
     if not message.text:
         return False
     text = message.text.lower().strip()
     triggers = (
-        "/app", "!app", "/house", "!house", "/menu", "!menu",
-        "хаус апп", "приложение", "хаус", "app"
+        "!app", "!house", "!menu",
+        "хаус апп", "хаус апп",
     )
     for t in triggers:
         if text.startswith(t):
@@ -116,11 +116,8 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     )
 
 
-@router.message(is_app_trigger, StateFilter("*"))
-async def cmd_open_app(message: Message):
-    """
-    Команда /app, /house, /menu, !app в группах и ЛС.
-    """
+async def _send_app_message(message: Message):
+    """Вспомогательная функция отправки сообщения с кнопкой приложения."""
     count = get_member_count()
     btn = get_app_button(message.chat.type, "💖 Открыть NEON BLUR App")
     kb = InlineKeyboardMarkup(inline_keyboard=[[btn]])
@@ -135,6 +132,22 @@ async def cmd_open_app(message: Message):
         await message.answer(text, reply_markup=kb)
     except Exception as e:
         logger.error(f"Error sending app message: {e}")
+
+
+@router.message(Command("app", "house", "menu"), StateFilter("*"))
+async def cmd_open_app(message: Message):
+    """
+    Команда /app, /house, /menu в группах и ЛС (aiogram автоматически убирает @botname).
+    """
+    await _send_app_message(message)
+
+
+@router.message(is_app_text_trigger, StateFilter("*"))
+async def cmd_open_app_text(message: Message):
+    """
+    Текстовые триггеры: !app, !house, хаус апп.
+    """
+    await _send_app_message(message)
 
 
 @router.message(Command("iamcreator", prefix="/!"), StateFilter("*"))
