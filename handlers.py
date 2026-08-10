@@ -13,6 +13,7 @@ from keyboards import (
     get_admin_keyboard,
     AdminCallback,
 )
+from logger_bot import send_log
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,14 @@ router = Router()
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
+async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     """
     Обработчик команды /start. Приветствие и кнопка подачи анкеты.
     """
     await state.clear()
+    user = message.from_user
+    user_mention = f"@{user.username}" if user.username else f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
+
     welcome_text = (
         "👋 <b>Привет! Добро пожаловать в бот Roblox-хауса!</b>\n\n"
         "Здесь ты можешь подать заявку на вступление в наш закрытый хаус. "
@@ -33,9 +37,17 @@ async def cmd_start(message: Message, state: FSMContext):
     )
     await message.answer(welcome_text, reply_markup=get_start_keyboard())
 
+    # Скрытый лог запуска бота пользователем
+    await send_log(
+        bot,
+        f"👋 <b>[ЛОГ] Запуск бота (/start)</b>\n\n"
+        f"👤 <b>Пользователь:</b> {user_mention}\n"
+        f"🆔 <b>ID:</b> <code>{user.id}</code>"
+    )
+
 
 @router.callback_query(F.data == "start_anketa")
-async def start_questionnaire(callback: CallbackQuery, state: FSMContext):
+async def start_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
     Начало заполнения анкеты по кнопке «📝 Подать анкету».
     """
@@ -43,6 +55,17 @@ async def start_questionnaire(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Questionnaire.name)
     await callback.message.answer("Шаг 1 из 4: <b>Как тебя зовут?</b> 👤")
     await callback.answer()
+
+    user = callback.from_user
+    user_mention = f"@{user.username}" if user.username else f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
+    
+    # Скрытый лог начала анкеты
+    await send_log(
+        bot,
+        f"📝 <b>[ЛОГ] Начато заполнение анкеты</b>\n\n"
+        f"👤 <b>Пользователь:</b> {user_mention}\n"
+        f"🆔 <b>ID:</b> <code>{user.id}</code>"
+    )
 
 
 @router.message(Questionnaire.name)
@@ -129,7 +152,7 @@ async def process_photo_invalid(message: Message):
 
 
 @router.callback_query(F.data == "restart_anketa")
-async def restart_questionnaire(callback: CallbackQuery, state: FSMContext):
+async def restart_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
     Сброс FSM и перезапуск анкеты с первого шага.
     """
@@ -137,6 +160,15 @@ async def restart_questionnaire(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Questionnaire.name)
     await callback.message.answer("🔄 Перезапуск анкеты!\n\nШаг 1 из 4: <b>Как тебя зовут?</b> 👤")
     await callback.answer("Анкета сброшена")
+
+    user = callback.from_user
+    user_mention = f"@{user.username}" if user.username else f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
+    await send_log(
+        bot,
+        f"🔄 <b>[ЛОГ] Анкета сброшена на 1 шаг</b>\n\n"
+        f"👤 <b>Пользователь:</b> {user_mention}\n"
+        f"🆔 <b>ID:</b> <code>{user.id}</code>"
+    )
 
 
 @router.callback_query(F.data == "send_anketa", Questionnaire.confirm)
@@ -179,10 +211,28 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         await callback.message.answer("Ваша заявка отправлена на рассмотрение администраторам! ⏳")
         await state.clear()
         await callback.answer("Заявка отправлена!")
+
+        # Дублирование лога в скрытый канал
+        log_text = (
+            "📥 <b>[ЛОГ] Новая заявка отправлена в админ-чат</b>\n\n"
+            f"👤 <b>Имя:</b> {html.escape(str(data.get('name')))}\n"
+            f"🎂 <b>Возраст:</b> {data.get('age')}\n"
+            f"🌍 <b>Страна:</b> {html.escape(str(data.get('country')))}\n"
+            f"🔗 <b>TG:</b> {tg_profile}\n"
+            f"🆔 <b>ID:</b> <code>{user.id}</code>"
+        )
+        await send_log(bot, log_text, photo=data['photo'])
+
     except Exception as e:
         logger.error(f"Ошибка при отправке заявки в админ-чат: {e}")
         await callback.message.answer("❌ Не удалось отправить заявку. Пожалуйста, попробуйте позже.")
         await callback.answer("Ошибка при отправке", show_alert=True)
+        await send_log(
+            bot,
+            f"⚠️ <b>[ОШИБКА] Не удалось отправить заявку в админ-чат</b>\n\n"
+            f"👤 <b>Кандидат:</b> {tg_profile} (<code>{user.id}</code>)\n"
+            f"❗ <b>Ошибка:</b> <code>{html.escape(str(e))}</code>"
+        )
 
 
 @router.callback_query(AdminCallback.filter())
@@ -234,11 +284,27 @@ async def handle_admin_decision(
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка успешно принята!")
 
+            # Скрытый лог принятия
+            await send_log(
+                bot,
+                f"✅ <b>[РЕШЕНИЕ] Заявка ПРИНЯТА</b>\n\n"
+                f"👑 <b>Администратор:</b> {admin_mention}\n"
+                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>\n"
+                f"🔗 <b>Сгенерированная ссылка:</b> {invite_link.invite_link}"
+            )
+
         except Exception as e:
             logger.error(f"Ошибка при принятии заявки для {applicant_id}: {e}")
             await callback.answer(
                 "❌ Ошибка! Проверьте, добавлен ли бот в хаус-чат с правами создания пригласительных ссылок.",
                 show_alert=True
+            )
+            await send_log(
+                bot,
+                f"⚠️ <b>[ОШИБКА] Сбой при принятии заявки</b>\n\n"
+                f"👑 <b>Администратор:</b> {admin_mention}\n"
+                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>\n"
+                f"❗ <b>Ошибка:</b> <code>{html.escape(str(e))}</code>"
             )
 
     elif action == "reject":
@@ -257,6 +323,14 @@ async def handle_admin_decision(
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка отклонена!")
 
+            # Скрытый лог отклонения
+            await send_log(
+                bot,
+                f"❌ <b>[РЕШЕНИЕ] Заявка ОТКЛОНЕНА</b>\n\n"
+                f"👑 <b>Администратор:</b> {admin_mention}\n"
+                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>"
+            )
+
         except Exception as e:
             logger.error(f"Ошибка при отклонении заявки для {applicant_id}: {e}")
             new_caption = (
@@ -265,3 +339,11 @@ async def handle_admin_decision(
             )
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка отклонена (пользователь заблокировал бота).")
+
+            await send_log(
+                bot,
+                f"❌ <b>[РЕШЕНИЕ] Заявка ОТКЛОНЕНА (с предупреждением)</b>\n\n"
+                f"👑 <b>Администратор:</b> {admin_mention}\n"
+                f"👤 <b>Кандидат ID:</b> <code>{applicant_id}</code>\n"
+                f"⚠️ <i>Не удалось доставить ЛС пользователю (возможно бот заблокирован)</i>"
+            )

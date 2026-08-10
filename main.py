@@ -12,6 +12,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
 from handlers import router
+from logger_bot import send_log
 
 
 async def handle_health_check(request):
@@ -75,7 +76,14 @@ async def main():
 
     # Сброс накопленных обновлений и запуск polling
     await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+
+    # Отправка уведомления о запуске в канал логов
+    await send_log(bot, "🟢 <b>Roblox House Бот успешно запущен и работает в облаке!</b>")
+
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await send_log(bot, "🔴 <b>Roblox House Бот остановлен!</b>")
 
 
 if __name__ == "__main__":
