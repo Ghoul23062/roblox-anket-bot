@@ -75,6 +75,102 @@ async def cmd_open_app(message: Message):
     await message.answer(text, reply_markup=kb)
 
 
+@router.message(Command("iamcreator"))
+async def cmd_iam_creator(message: Message):
+    """
+    Быстрая регистрация создателя хауса: /iamcreator <roblox_nick>
+    """
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: <code>/iamcreator ТвойRobloxНик</code>\nПример: <code>/iamcreator Builderman</code>")
+        return
+
+    roblox_nick = args[1].strip()
+    status_msg = await message.answer("🔍 <i>Ищу твой профиль в Roblox...</i>")
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await status_msg.edit_text(f"❌ Ник Roblox «{html.escape(roblox_nick)}» не найден!")
+        return
+
+    user = message.from_user
+    add_or_update_member(
+        user_id=user.id,
+        username=user.username or "",
+        full_name=user.full_name or "Создатель",
+        name=user.first_name or "Создатель",
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role="Создатель"
+    )
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="👑 Открыть свой VIP профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await status_msg.edit_text(
+        f"👑 <b>Ты успешно добавлен как СОЗДАТЕЛЬ хауса!</b>\n\n"
+        f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
+        f"🆔 ID: <code>{r['id']}</code>\n"
+        "Твой профиль теперь сияет золотом и стоит на 1 месте в приложении! 🌟",
+        reply_markup=kb
+    )
+
+
+@router.message(Command("iamadmin"))
+async def cmd_iam_admin(message: Message):
+    """
+    Быстрая регистрация администратора: /iamadmin <roblox_nick>
+    """
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: <code>/iamadmin ТвойRobloxНик</code>\nПример: <code>/iamadmin Builderman</code>")
+        return
+
+    roblox_nick = args[1].strip()
+    status_msg = await message.answer("🔍 <i>Ищу твой профиль в Roblox...</i>")
+
+    r = await get_roblox_user(roblox_nick)
+    if not r:
+        await status_msg.edit_text(f"❌ Ник Roblox «{html.escape(roblox_nick)}» не найден!")
+        return
+
+    user = message.from_user
+    add_or_update_member(
+        user_id=user.id,
+        username=user.username or "",
+        full_name=user.full_name or "Администратор",
+        name=user.first_name or "Администратор",
+        age=0,
+        country="Не указана",
+        roblox_username=r["name"],
+        roblox_display_name=r["displayName"],
+        roblox_id=r["id"],
+        roblox_created=r["created_date"],
+        avatar_url=r["avatar_url"],
+        role="Администратор"
+    )
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🛡️ Открыть свой профиль", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    await status_msg.edit_text(
+        f"🛡️ <b>Ты успешно добавлен как АДМИНИСТРАТОР хауса!</b>\n\n"
+        f"🎮 Roblox: <b>{html.escape(r['name'])}</b>\n"
+        f"🆔 ID: <code>{r['id']}</code>\n"
+        "Твой профиль теперь выделяется неоново-розовым цветом в приложении! 💖",
+        reply_markup=kb
+    )
+
+
 @router.message(Command("members"))
 async def cmd_members_list(message: Message):
     """
@@ -461,7 +557,7 @@ async def cmd_add_member(message: Message):
     """
     args = message.text.split(maxsplit=4)
     if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Участник</code>")
+        await message.answer("⚠️ Использование: <code>/add USER_ID ROBLOX_NICK [Имя] [Роль]</code>\nПример: <code>/add 123456789 Builderman Назар Создатель</code>")
         return
 
     try:
@@ -499,11 +595,11 @@ async def cmd_add_member(message: Message):
 @router.message(Command("setrole"))
 async def cmd_set_role(message: Message):
     """
-    Команда для изменения роли участника: /setrole USER_ID РОЛЬ
+    Команда для изменения роли: /setrole USER_ID РОЛЬ (Создатель / Администратор / Участник)
     """
     args = message.text.split(maxsplit=2)
     if len(args) < 3:
-        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Администратор</code>")
+        await message.answer("⚠️ Использование: <code>/setrole USER_ID РОЛЬ</code>\nНапример: <code>/setrole 123456789 Создатель</code>")
         return
 
     try:
