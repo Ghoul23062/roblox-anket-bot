@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import logging
 import os
 import sys
@@ -9,37 +10,89 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, WEBAPP_URL
 from handlers import router
 from logger_bot import send_log
+from database import init_db, get_all_members, get_member
 
+
+# ================== HTTP API & WEBAPP HANDLERS ==================
 
 async def handle_health_check(request):
     """
-    Эндпоинт проверки работоспособности (поддерживает любой HTTP-метод: GET, HEAD и т.д.).
+    Эндпоинт проверки работоспособности для Render.
     """
     return web.Response(text="Roblox House Bot is running 24/7!", status=200)
 
 
+async def handle_webapp_index(request):
+    """
+    Отдает главную страницу Mini App (index.html).
+    """
+    index_path = os.path.join(os.path.dirname(__file__), "webapp", "index.html")
+    if os.path.exists(index_path):
+        return web.FileResponse(index_path)
+    return web.Response(text="WebApp index.html not found", status=404)
+
+
+async def handle_api_members(request):
+    """
+    API: Список всех участников хауса.
+    """
+    members = get_all_members()
+    return web.json_response(members)
+
+
+async def handle_api_member(request):
+    """
+    API: Получение данных одного участника по ?user_id=123.
+    """
+    user_id_raw = request.query.get("user_id", "0")
+    try:
+        user_id = int(user_id_raw)
+    except ValueError:
+        return web.json_response({"found": False, "error": "Invalid user_id"})
+
+    member = get_member(user_id)
+    if member:
+        return web.json_response({"found": True, "member": member})
+    return web.json_response({"found": False})
+
+
 async def start_web_server():
     """
-    Запуск легкого HTTP-сервера для Render Web Service (Free Tier).
+    Запуск фонового веб-сервера для Telegram Mini App и Render Web Service.
     """
     port = int(os.getenv("PORT", 8080))
     app = web.Application()
-    # Разрешаем любые пути и любые HTTP-методы (GET, HEAD)
-    app.router.add_route("*", "/{tail:.*}", handle_health_check)
+
+    # API маршруты
+    app.router.add_get("/api/members", handle_api_members)
+    app.router.add_get("/api/member", handle_api_member)
+    app.router.add_get("/webapp", handle_webapp_index)
+    app.router.add_get("/", handle_webapp_index)
+    app.router.add_get("/health", handle_health_check)
+
+    # Статические файлы (CSS, JS)
+    webapp_dir = os.path.join(os.path.dirname(__file__), "webapp")
+    if os.path.exists(webapp_dir):
+        app.router.add_static("/webapp/", path=webapp_dir, name="webapp_static")
+        app.router.add_static("/static/", path=webapp_dir, name="static")
+
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    logging.info(f"🌐 HTTP Health Check сервер запущен на порту {port}")
+    logging.info(f"🌐 WebApp & API сервер запущен на порту {port} (URL: {WEBAPP_URL})")
 
+
+# ================== ЗАПУСК БОТА ==================
 
 async def main():
     """
-    Основная функция запуска бота и веб-сервера.
+    Основная функция запуска бота, БД и веб-сервера.
     """
     # Настройка кодировки UTF-8 для Windows консоли
     if sys.platform == "win32":
@@ -59,26 +112,40 @@ async def main():
         logging.critical("❌ BOT_TOKEN отсутствует в конфигурации! Проверьте файл .env")
         return
 
-    # Запуск фонового веб-сервера для бесплатного тарифа Render
+    # 1. Инициализация базы данных SQLite
+    init_db()
+
+    # 2. Запуск веб-сервера для Mini App и Render
     await start_web_server()
 
-    # Инициализация бота с парсингом HTML по умолчанию
+    # 3. Инициализация бота с парсингом HTML
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
 
-    # Инициализация диспетчера с FSM
+    # Установка постоянной кнопки меню Mini App в Telegram
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="📱 Хаус Апп",
+                web_app=WebAppInfo(url=WEBAPP_URL)
+            )
+        )
+    except Exception as e:
+        logging.warning(f"Не удалось установить MenuButton WebApp: {e}")
+
+    # 4. Инициализация диспетчера
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
 
     logging.info("🚀 Запуск Roblox-house анкетного бота...")
 
-    # Сброс накопленных обновлений и запуск polling
+    # Сброс накопленных обновлений
     await bot.delete_webhook(drop_pending_updates=True)
 
-    # Отправка уведомления о запуске в канал логов
-    await send_log(bot, "🟢 <b>Roblox House Бот успешно запущен и работает в облаке!</b>")
+    # Уведомление в скрытый канал логов
+    await send_log(bot, "🟢 <b>Roblox House Бот & Mini App успешно запущены!</b>")
 
     try:
         await dp.start_polling(bot)
