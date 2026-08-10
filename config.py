@@ -8,6 +8,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_CHAT_ID_RAW = os.getenv("ADMIN_CHAT_ID", "0").strip()
 HOUSE_CHAT_ID_RAW = os.getenv("HOUSE_CHAT_ID", "0").strip()
 LOG_CHANNEL_ID_RAW = os.getenv("LOG_CHANNEL_ID", "0").strip()
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://roblox-anket-bot.onrender.com/webapp").strip()
 
 if not BOT_TOKEN:
     logging.warning("⚠️ BOT_TOKEN is missing! Please set BOT_TOKEN in .env or environment variables.")
