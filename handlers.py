@@ -21,7 +21,8 @@ from database import (
     get_pending_application,
     update_member_role,
     get_member_count,
-    get_all_members
+    get_all_members,
+    remove_member
 )
 
 logger = logging.getLogger(__name__)
@@ -435,6 +436,121 @@ async def cmd_say(message: Message, bot: Bot):
     except Exception as e:
         logger.error(f"Error in /say command: {e}")
         await message.answer(f"❌ Ошибка отправки сообщения: {e}")
+
+
+@router.message(Command("ban", prefix="/!"), StateFilter("*"))
+async def cmd_ban(message: Message, bot: Bot):
+    """
+    Команда бана нарушителя для модерации (только для админов/создателя).
+    Использование: 
+    - Ответом на сообщение нарушителя: /ban [Причина]
+    - Командой с ID: /ban 123456789 [Причина]
+    """
+    admin_user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, admin_user.id, message.chat.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b> Модерация доступна только администраторам.")
+        return
+
+    target_user_id = None
+    target_name = "Пользователь"
+    reason = "Нарушение правил"
+
+    if message.reply_to_message:
+        reply_user = message.reply_to_message.from_user
+        target_user_id = reply_user.id
+        target_name = reply_user.full_name
+        args = message.text.split(maxsplit=1)
+        if len(args) > 1:
+            reason = args[1].strip()
+    else:
+        args = message.text.split(maxsplit=2)
+        if len(args) < 2:
+            await message.answer(
+                "⚠️ <b>Использование модерации (/ban):</b>\n\n"
+                "1. Ответь этой командой на сообщение нарушителя: <code>/ban Причина</code>\n"
+                "2. Или по ID: <code>/ban USER_ID Причина</code>"
+            )
+            return
+        try:
+            target_user_id = int(args[1])
+        except ValueError:
+            await message.answer("❌ USER_ID должен быть числом!")
+            return
+        if len(args) > 2:
+            reason = args[2].strip()
+
+    chat_id = message.chat.id if message.chat.id < 0 else HOUSE_CHAT_ID
+
+    if not chat_id:
+        await message.answer("❌ Не указан чат для применения бана.")
+        return
+
+    try:
+        await bot.ban_chat_member(chat_id=chat_id, user_id=target_user_id)
+        remove_member(target_user_id)
+
+        admin_mention = f"@{admin_user.username}" if admin_user.username else admin_user.full_name
+
+        await message.answer(
+            f"🚫 <b>Пользователь {html.escape(target_name)} (<code>{target_user_id}</code>) заблокирован!</b>\n"
+            f"👤 Администратор: {admin_mention}\n"
+            f"📝 Причина: <i>{html.escape(reason)}</i>"
+        )
+
+        await send_log(
+            bot,
+            f"🚫 <b>[МОДЕРАЦИЯ] Бан пользователя</b>\n\n"
+            f"👤 <b>Админ:</b> {admin_mention}\n"
+            f"🎯 <b>Нарушитель ID:</b> <code>{target_user_id}</code>\n"
+            f"📝 <b>Причина:</b> {html.escape(reason)}"
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при бане пользователя {target_user_id}: {e}")
+        await message.answer(f"❌ Не удалось заблокировать пользователя: {e}")
+
+
+@router.message(Command("unban", prefix="/!"), StateFilter("*"))
+async def cmd_unban(message: Message, bot: Bot):
+    """
+    Команда разбана пользователя (только для админов/создателя).
+    Использование: /unban 123456789
+    """
+    admin_user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, admin_user.id, message.chat.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b>")
+        return
+
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("⚠️ Использование: <code>/unban USER_ID</code>")
+        return
+
+    try:
+        target_user_id = int(args[1])
+    except ValueError:
+        await message.answer("❌ USER_ID должен быть числом!")
+        return
+
+    chat_id = message.chat.id if message.chat.id < 0 else HOUSE_CHAT_ID
+
+    try:
+        await bot.unban_chat_member(chat_id=chat_id, user_id=target_user_id, only_if_banned=True)
+        admin_mention = f"@{admin_user.username}" if admin_user.username else admin_user.full_name
+
+        await message.answer(f"✅ Пользователь <code>{target_user_id}</code> разблокирован!")
+        await send_log(
+            bot,
+            f"✅ <b>[МОДЕРАЦИЯ] Разбан пользователя</b>\n\n"
+            f"👤 <b>Админ:</b> {admin_mention}\n"
+            f"🎯 <b>Пользователь ID:</b> <code>{target_user_id}</code>"
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при разбане пользователя {target_user_id}: {e}")
+        await message.answer(f"❌ Не удалось разблокировать пользователя: {e}")
 
 
 @router.message(
