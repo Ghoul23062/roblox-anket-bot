@@ -6,7 +6,7 @@
     <title>NEON BLUR • Roblox House</title>
     <!-- Подключение Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Google Fonts: Outfit & Orbitron -->
+    <!-- Google Fonts: Orbitron & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +15,6 @@
         :root {
             --bg-dark: #070712;
             --bg-card: rgba(15, 15, 32, 0.78);
-            --bg-card-hover: rgba(25, 25, 52, 0.88);
             --border-neon-pink: rgba(255, 42, 141, 0.35);
             --border-neon-purple: rgba(155, 69, 255, 0.35);
             
@@ -35,7 +34,6 @@
 
             --glow-pink: 0 0 20px rgba(255, 42, 141, 0.55), 0 0 40px rgba(255, 42, 141, 0.25);
             --glow-purple: 0 0 20px rgba(155, 69, 255, 0.55), 0 0 40px rgba(155, 69, 255, 0.25);
-            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.55);
 
             --radius-sm: 10px;
             --radius-md: 18px;
@@ -179,7 +177,7 @@
             position: relative;
             width: 220px;
             height: 220px;
-            margin: 0 auto 12px;
+            margin: 0 auto 10px;
             perspective: 1000px;
             cursor: grab;
         }
@@ -355,59 +353,6 @@
             background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        /* Форма привязки ника */
-        .sync-box {
-            margin-top: 14px;
-            padding: 16px;
-            border-radius: var(--radius-md);
-            background: rgba(255, 42, 141, 0.06);
-            border: 1px dashed var(--border-neon-pink);
-            text-align: left;
-        }
-
-        .sync-box-title {
-            font-size: 12px;
-            font-weight: 800;
-            color: var(--neon-pink);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .sync-input-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .sync-input {
-            flex: 1;
-            background: rgba(10, 10, 24, 0.8);
-            border: 1px solid rgba(255, 42, 141, 0.3);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            color: #ffffff;
-            font-size: 13px;
-            outline: none;
-        }
-
-        .sync-input:focus {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 12px rgba(255, 42, 141, 0.3);
-        }
-
-        .btn-sync-submit {
-            padding: 10px 18px;
-            font-size: 13px;
-            border-radius: var(--radius-sm);
-            background: var(--gradient-pink-purple);
-            color: #ffffff;
-            font-weight: 800;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 0 14px rgba(255, 42, 141, 0.4);
         }
 
         /* ================== УЧАСТНИКИ ================== */
@@ -804,7 +749,7 @@
         <!-- Основной контент (Вкладки) -->
         <main class="app-main">
             
-            <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ (С ИНТЕРАКТИВНЫМ 3D СКИНОВЫМ ПОДИУМОМ) -->
+            <!-- 👤 ВКЛАДКА 1: МОЙ ПРОФИЛЬ -->
             <section id="tab-profile" class="tab-content active">
                 <div class="profile-card glass-panel">
                     
@@ -851,18 +796,6 @@
                             <span>🎮 Профиль в Roblox</span>
                         </button>
                     </div>
-
-                    <!-- Форма привязки никнейма прямо из WebApp -->
-                    <div id="syncBox" class="sync-box">
-                        <div class="sync-box-title">
-                            <span>🔗</span>
-                            <span>Привязать свой скин Roblox:</span>
-                        </div>
-                        <div class="sync-input-row">
-                            <input type="text" id="syncInputNick" class="sync-input" placeholder="Введи свой ник в Roblox...">
-                            <button id="syncSubmitBtn" class="btn-sync-submit">Найти</button>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -902,12 +835,12 @@
                         <p class="game-desc">
                             Главный детективный режим в Roblox! Раскрывай тайны за Шерифа, выживай за Невинного или побеждай за Убийцу на сходках хауса.
                         </p>
-                        <button onclick="launchRobloxPlace('142823291')" class="btn btn-neon-pink">
+                        <button onclick="launchRobloxPlace('142823291', 'Murder-Mystery-2')" class="btn btn-neon-pink">
                             <span>🎮 Запустить MM2</span>
                         </button>
                     </div>
 
-                    <!-- Игра 2: TTD 3 (TTD3) -->
+                    <!-- Игра 2: TTD 3 (TTD3 - Обновленная ссылка) -->
                     <div class="game-card glass-panel ttd3-theme">
                         <div class="game-badge">💃 Танцы & Чилл</div>
                         <div class="game-header">
@@ -920,7 +853,7 @@
                         <p class="game-desc">
                             Главный танцевальный плейс Roblox! Сотни трендовых анимаций, эмоций и музыки для тусовок, клипов и общения участников хауса.
                         </p>
-                        <button onclick="launchRobloxPlace('5771589323')" class="btn btn-neon-purple">
+                        <button onclick="launchRobloxPlace('5771467270', 'TTD-3')" class="btn btn-neon-purple">
                             <span>💃 Запустить TTD 3</span>
                         </button>
                     </div>
@@ -1000,8 +933,8 @@
 
         const tgUser = tg?.initDataUnsafe?.user || {
             id: 12345678,
-            first_name: "Назар",
-            username: "meowo01"
+            first_name: "Участник",
+            username: ""
         };
 
         const DEFAULT_AVATAR = "https://tr.rbxcdn.com/30DAY-Avatar-882C70E071E5997E51F8CB373002AFC3-Png/720/720/Avatar/Png/noFilter";
@@ -1019,11 +952,11 @@
         }
 
         // Запуск Roblox плейсов
-        function launchRobloxPlace(placeId) {
+        function launchRobloxPlace(placeId, nameSlug) {
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('heavy');
             }
-            const robloxUrl = `https://www.roblox.com/games/${placeId}`;
+            const robloxUrl = `https://www.roblox.com/games/${placeId}/${nameSlug || ''}`;
             openExternalUrl(robloxUrl);
         }
 
@@ -1044,7 +977,6 @@
             skin3DWrapper.style.transform = `rotateY(${currentRotationY}deg) rotateX(${-currentRotationX}deg) scale(1.05)`;
         }
 
-        // Плавное авто-вращение по умолчанию
         function renderLoop() {
             if (autoRotate && !isDragging) {
                 currentRotationY += 0.4;
@@ -1059,7 +991,7 @@
         }
         renderLoop();
 
-        // Обработка Touch (для смартфонов)
+        // Touch (мобильные телефоны)
         stage3D.addEventListener('touchstart', (e) => {
             isDragging = true;
             autoRotate = false;
@@ -1083,11 +1015,10 @@
 
         window.addEventListener('touchend', () => {
             isDragging = false;
-            // Через 4 секунды покоя возвращается плавное авто-вращение
             setTimeout(() => { if (!isDragging) autoRotate = true; }, 4000);
         });
 
-        // Обработка Мыши (для ПК)
+        // Мышь (ПК)
         stage3D.addEventListener('mousedown', (e) => {
             isDragging = true;
             autoRotate = false;
@@ -1154,7 +1085,7 @@
                 console.error("Ошибка загрузки профиля:", e);
             }
 
-            renderDefaultProfile();
+            renderNotMemberProfile();
         }
 
         function renderProfile(member) {
@@ -1176,26 +1107,27 @@
             document.getElementById('profileRobloxBtn').onclick = () => {
                 openExternalUrl(`https://www.roblox.com/users/${member.roblox_id}/profile`);
             };
-
-            // Скрываем форму привязки, если аккаунт уже привязан
-            if (member.roblox_username) {
-                const syncBox = document.getElementById('syncBox');
-                if (syncBox) syncBox.style.display = "none";
-            }
         }
 
-        function renderDefaultProfile() {
-            const displayName = tgUser.first_name || "Участник";
+        function renderNotMemberProfile() {
+            const displayName = tgUser.first_name || "Гость";
             document.getElementById('profileName').textContent = displayName;
             document.getElementById('profileSkinImg').src = DEFAULT_AVATAR;
-            document.getElementById('profileRobloxNick').textContent = tgUser.username ? `@${tgUser.username}` : "Скин не привязан";
+            document.getElementById('profileRobloxNick').textContent = "Заявка не подана";
+            
+            const roleTag = document.getElementById('profileRoleTag');
+            roleTag.textContent = "Не в хаусе";
+            roleTag.className = "role-tag role-member";
+
             document.getElementById('profileAge').textContent = "—";
             document.getElementById('profileCountry').textContent = "—";
             document.getElementById('profileRobloxId').textContent = "—";
             document.getElementById('profileRobloxDate').textContent = "—";
 
-            document.getElementById('profileRobloxBtn').onclick = () => {
-                openExternalUrl("https://www.roblox.com");
+            const robloxBtn = document.getElementById('profileRobloxBtn');
+            robloxBtn.innerHTML = "<span>📝 Подай анкету в боте!</span>";
+            robloxBtn.onclick = () => {
+                if (tg && tg.close) tg.close();
             };
         }
 
@@ -1203,48 +1135,6 @@
             if (role === "Создатель") return "role-creator";
             if (role === "Администратор") return "role-admin";
             return "role-member";
-        }
-
-        // Привязка никнейма прямо из WebApp
-        const syncSubmitBtn = document.getElementById('syncSubmitBtn');
-        const syncInputNick = document.getElementById('syncInputNick');
-        if (syncSubmitBtn && syncInputNick) {
-            syncSubmitBtn.addEventListener('click', async () => {
-                const nick = syncInputNick.value.trim();
-                if (!nick) return;
-
-                syncSubmitBtn.disabled = true;
-                syncSubmitBtn.textContent = "Поиск...";
-
-                try {
-                    const res = await fetch('/api/sync', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_id: tgUser.id,
-                            username: tgUser.username || "",
-                            full_name: tgUser.first_name || "Участник",
-                            roblox_username: nick
-                        })
-                    });
-                    const data = await res.json();
-                    if (data.success && data.member) {
-                        currentMemberData = data.member;
-                        renderProfile(currentMemberData);
-                        loadMembers();
-                        if (tg?.HapticFeedback) {
-                            tg.HapticFeedback.notificationOccurred('success');
-                        }
-                    } else {
-                        alert(data.error || "Игрок не найден в Roblox!");
-                    }
-                } catch (e) {
-                    alert("Ошибка синхронизации: " + e);
-                } finally {
-                    syncSubmitBtn.disabled = false;
-                    syncSubmitBtn.textContent = "Найти";
-                }
-            });
         }
 
         // ================== ЗАГРУЗКА И ПОИСК УЧАСТНИКОВ ==================
