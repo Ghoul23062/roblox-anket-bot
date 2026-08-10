@@ -61,3 +61,35 @@ def get_admin_keyboard(user_id: int) -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+class AdminBanCallback(CallbackData, prefix="admin_ban"):
+    """
+    Фабрика колбэков для быстрого бана из списка участников.
+    """
+    user_id: int
+
+
+def get_members_moderation_keyboard(members: list) -> InlineKeyboardMarkup:
+    """
+    Генерирует инлайн-кнопки бана для списка участников хауса.
+    """
+    buttons = []
+    for m in members[:20]:  # до 20 участников на страницу
+        user_id = m.get("user_id", 0)
+        name = m.get("name") or m.get("roblox_username") or f"ID {user_id}"
+        role = m.get("role", "Участник")
+        
+        # Не показываем кнопку бана для Создателя
+        if role == "Создатель":
+            continue
+            
+        btn_text = f"🚫 Забанить {name}"
+        buttons.append([
+            InlineKeyboardButton(
+                text=btn_text,
+                callback_data=AdminBanCallback(user_id=user_id).pack()
+            )
+        ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
