@@ -49,7 +49,7 @@ def get_app_button(chat_type: str, text: str = "💖 Открыть NEON BLUR Ap
 
 async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = None) -> tuple[bool, str]:
     """
-    Проверяет права админа/создателя в текущем чате, в чате хауса или в админ-чате.
+    Проверяет права админа/создателя в текущем чате, в чате хауса, в лог-канале или в админ-чате.
     """
     if chat_id and chat_id < 0:
         try:
@@ -62,6 +62,14 @@ async def is_telegram_admin_or_creator(bot: Bot, user_id: int, chat_id: int = No
     if ADMIN_CHAT_ID:
         try:
             m = await bot.get_chat_member(chat_id=ADMIN_CHAT_ID, user_id=user_id)
+            if m.status in ("creator", "administrator"):
+                return True, m.status
+        except Exception:
+            pass
+
+    if LOG_CHANNEL_ID:
+        try:
+            m = await bot.get_chat_member(chat_id=LOG_CHANNEL_ID, user_id=user_id)
             if m.status in ("creator", "administrator"):
                 return True, m.status
         except Exception:
