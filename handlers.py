@@ -28,14 +28,13 @@ logger = logging.getLogger(__name__)
 
 router = Router()
 
-# Кэш последних заявок в памяти: {user_id: data_dict}
 PENDING_APPLICATIONS = {}
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     """
-    Обработчик команды /start. Приветствие, кнопка запуска Mini App и подачи анкеты.
+    Обработчик команды /start в ЛС бота.
     """
     await state.clear()
     user = message.from_user
@@ -48,7 +47,6 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     )
     await message.answer(welcome_text, reply_markup=get_start_keyboard())
 
-    # Скрытый лог запуска бота
     await send_log(
         bot,
         f"👋 <b>[ЛОГ] Запуск бота (/start)</b>\n\n"
@@ -57,17 +55,51 @@ async def cmd_start(message: Message, state: FSMContext, bot: Bot):
     )
 
 
-@router.message(Command("app"))
+@router.message(Command("app", "house", "menu"))
 async def cmd_open_app(message: Message):
     """
-    Быстрая команда /app для открытия Telegram Mini App.
+    Команда /app, /house или /menu (работает как в ЛС, так и в групповом чате хауса).
     """
+    count = get_member_count()
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📱 Открыть NEON BLUR", web_app=WebAppInfo(url=WEBAPP_URL))]
+            [InlineKeyboardButton(text="💖 Открыть NEON BLUR App", web_app=WebAppInfo(url=WEBAPP_URL))]
         ]
     )
-    await message.answer("🏰 <b>Нажми на кнопку ниже, чтобы открыть приложение хауса:</b>", reply_markup=kb)
+    text = (
+        "🏰 <b>NEON BLUR • Официальное приложение хауса</b>\n\n"
+        f"👥 Участников в хаусе: <b>{count}</b>\n"
+        "🎮 Игры: <b>MM2</b> и <b>TTD 3</b>\n\n"
+        "<i>Нажми кнопку ниже, чтобы открыть 3D профили и список тусовки:</i>"
+    )
+    await message.answer(text, reply_markup=kb)
+
+
+@router.message(Command("members"))
+async def cmd_members_list(message: Message):
+    """
+    Команда /members в группе или ЛС.
+    """
+    members = get_all_members()
+    count = len(members)
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="👥 Открыть список в App", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ]
+    )
+    if count == 0:
+        await message.answer("👥 В базе пока нет утвержденных участников.", reply_markup=kb)
+        return
+
+    text = f"👥 <b>Участники хауса NEON BLUR (Всего: {count}):</b>\n\n"
+    for i, m in enumerate(members[:15], 1):
+        role_icon = "👑" if m.get("role") == "Создатель" else ("🛡️" if m.get("role") == "Администратор" else "✨")
+        text += f"{i}. {role_icon} <b>{html.escape(m.get('name', ''))}</b> (@{html.escape(m.get('roblox_username', ''))})\n"
+
+    if count > 15:
+        text += f"\n<i>...и ещё {count - 15} участников!</i>"
+
+    await message.answer(text, reply_markup=kb)
 
 
 @router.callback_query(F.data == "start_anketa")
@@ -146,7 +178,7 @@ async def process_country(message: Message, state: FSMContext):
 @router.message(Questionnaire.roblox_username)
 async def process_roblox_username(message: Message, state: FSMContext):
     """
-    Шаг 4: Проверка никнейма через Roblox API, получение HD скина и даты регистрации.
+    Шаг 4: Проверка никнейма через Roblox API.
     """
     if not message.text:
         await message.answer("⚠️ Пожалуйста, отправь свой никнейм в Roblox текстом:")
@@ -216,7 +248,7 @@ async def restart_questionnaire(callback: CallbackQuery, state: FSMContext, bot:
 @router.callback_query(F.data == "send_anketa", Questionnaire.confirm)
 async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bot):
     """
-    Подтверждение и отправка анкеты в админ-чат + сохранение в persistent SQLite pending_applications.
+    Подтверждение и отправка анкеты в админ-чат.
     """
     data = await state.get_data()
     user = callback.from_user
@@ -236,7 +268,6 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         "avatar_url": r.get("avatar_url", "")
     }
 
-    # Сохраняем в память и в SQLite базу
     PENDING_APPLICATIONS[user.id] = app_record
     save_pending_application(
         user_id=app_record["user_id"],
@@ -286,7 +317,6 @@ async def send_questionnaire(callback: CallbackQuery, state: FSMContext, bot: Bo
         await state.clear()
         await callback.answer("Заявка отправлена!")
 
-        # Дублирование в канал логов
         log_text = (
             "📥 <b>[ЛОГ] Новая заявка отправлена в админ-чат</b>\n\n"
             f"👤 <b>Имя:</b> {html.escape(str(data.get('name')))}\n"
@@ -313,7 +343,6 @@ async def handle_admin_decision(
 ):
     """
     Обработчик кнопок администратора [✅ Принять] и [❌ Отклонить].
-    При принятии: мгновенно сохраняет участника в базу данных и приложение.
     """
     action = callback_data.action
     applicant_id = callback_data.user_id
@@ -332,13 +361,11 @@ async def handle_admin_decision(
             return
 
         try:
-            # 1. Генерация персональной одноразовой ссылки
             invite_link = await bot.create_chat_invite_link(
                 chat_id=HOUSE_CHAT_ID,
                 member_limit=1
             )
 
-            # 2. Получение данных заявки из памяти или SQLite базы
             app_data = PENDING_APPLICATIONS.get(applicant_id) or get_pending_application(applicant_id)
             if app_data:
                 add_or_update_member(
@@ -356,7 +383,6 @@ async def handle_admin_decision(
                     role="Участник"
                 )
 
-            # 3. Отправка пользователю ссылки в ЛС с кнопкой Mini App
             kb = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [InlineKeyboardButton(text="📱 Открыть NEON BLUR", web_app=WebAppInfo(url=WEBAPP_URL))]
@@ -372,16 +398,14 @@ async def handle_admin_decision(
                 reply_markup=kb
             )
 
-            # 4. Обновление сообщения в админ-чате
             new_caption = (
                 f"{original_caption}\n\n"
                 f"✅ <b>Заявка принята</b> администратором {admin_mention}\n"
-                f"💾 <i>Участник автоматически добавлен в базу и приложение!</i>"
+                f"💾 <i>Участник автоматически сохранен в базе и приложении!</i>"
             )
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка успешно принята!")
 
-            # 5. Скрытый лог принятия
             await send_log(
                 bot,
                 f"✅ <b>[РЕШЕНИЕ] Заявка ПРИНЯТА</b>\n\n"
@@ -475,7 +499,7 @@ async def cmd_add_member(message: Message):
 @router.message(Command("setrole"))
 async def cmd_set_role(message: Message):
     """
-    Команда для изменения роли участника: /setrole USER_ID РОЛЬ (Участник / Администратор / Создатель)
+    Команда для изменения роли участника: /setrole USER_ID РОЛЬ
     """
     args = message.text.split(maxsplit=2)
     if len(args) < 3:
