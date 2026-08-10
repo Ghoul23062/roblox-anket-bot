@@ -12,6 +12,8 @@ from keyboards import (
     get_confirm_keyboard,
     get_admin_keyboard,
     AdminCallback,
+    AdminBanCallback,
+    get_members_moderation_keyboard,
 )
 from logger_bot import send_log
 from roblox_api import get_roblox_user
@@ -928,3 +930,88 @@ async def handle_admin_decision(
             )
             await callback.message.edit_caption(caption=new_caption, reply_markup=None)
             await callback.answer("Заявка отклонена.")
+
+
+@router.message(Command("manage", "admin_members", "mod", prefix="/!"), StateFilter("*"))
+async def cmd_manage_members(message: Message, bot: Bot):
+    """
+    Панель модерации участников для администраторов (показывает список и кнопки бана).
+    """
+    user = message.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, user.id, message.chat.id)
+
+    if not has_rights:
+        await message.answer("❌ <b>Доступ запрещен!</b> Команда доступна только администраторам.")
+        return
+
+    members = get_all_members()
+    if not members:
+        await message.answer("🛠️ <b>Панель модерации:</b> Список участников пуст.")
+        return
+
+    text = "🛠️ <b>Панель модерации участников хауса:</b>\n\n"
+    for i, m in enumerate(members[:20], 1):
+        role = m.get("role", "Участник")
+        role_icon = "👑" if role == "Создатель" else ("🛡️" if role == "Администратор" else ("🎬" if role in ("Монтажёр", "Монтажер") else "✨"))
+        text += f"{i}. {role_icon} <b>{html.escape(m.get('name', ''))}</b> (Roblox: <code>{html.escape(m.get('roblox_username', ''))}</code>, ID: <code>{m.get('user_id')}</code>)\n"
+
+    kb = get_members_moderation_keyboard(members)
+    await message.answer(text, reply_markup=kb)
+
+
+@router.callback_query(AdminBanCallback.filter())
+async def handle_admin_ban_callback(
+    callback: CallbackQuery,
+    callback_data: AdminBanCallback,
+    bot: Bot
+):
+    """
+    Обработчик нажатия кнопки «🚫 Забанить [Имя]» в панели модерации.
+    """
+    admin_user = callback.from_user
+    has_rights, _ = await is_telegram_admin_or_creator(bot, admin_user.id, callback.message.chat.id)
+
+    if not has_rights:
+        await callback.answer("❌ Доступ запрещен!", show_alert=True)
+        return
+
+    target_user_id = callback_data.user_id
+    chat_id = HOUSE_CHAT_ID or callback.message.chat.id
+
+    try:
+        if chat_id:
+            try:
+                await bot.ban_chat_member(chat_id=chat_id, user_id=target_user_id)
+            except Exception as ex:
+                logger.warning(f"Не удалось забанить в чате {chat_id}: {ex}")
+
+        remove_member(target_user_id)
+        admin_mention = f"@{admin_user.username}" if admin_user.username else admin_user.full_name
+
+        await callback.answer("Пользователь заблокирован и удален из базы!", show_alert=True)
+
+        await send_log(
+            bot,
+            f"🚫 <b>[МОДЕРАЦИЯ] Пользователь забанен из панели</b>\n\n"
+            f"👤 <b>Админ:</b> {admin_mention}\n"
+            f"🎯 <b>Забанен ID:</b> <code>{target_user_id}</code>"
+        )
+
+        # Обновляем список в сообщении
+        members = get_all_members()
+        text = "🛠️ <b>Панель модерации участников хауса (Обновлено):</b>\n\n"
+        for i, m in enumerate(members[:20], 1):
+            role = m.get("role", "Участник")
+            role_icon = "👑" if role == "Создатель" else ("🛡️" if role == "Администратор" else ("🎬" if role in ("Монтажёр", "Монтажер") else "✨"))
+            text += f"{i}. {role_icon} <b>{html.escape(m.get('name', ''))}</b> (Roblox: <code>{html.escape(m.get('roblox_username', ''))}</code>, ID: <code>{m.get('user_id')}</code>)\n"
+
+        kb = get_members_moderation_keyboard(members)
+        if not members:
+            text = "🛠️ <b>Панель модерации:</b> Список участников пуст."
+            await callback.message.edit_text(text, reply_markup=None)
+        else:
+            await callback.message.edit_text(text, reply_markup=kb)
+
+    except Exception as e:
+        logger.error(f"Ошибка при бане {target_user_id} из панели: {e}")
+        await callback.answer(f"❌ Ошибка: {e}", show_alert=True)
