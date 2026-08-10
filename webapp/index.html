@@ -18,6 +18,7 @@
             --border-neon-pink: rgba(255, 42, 141, 0.35);
             --border-neon-purple: rgba(155, 69, 255, 0.35);
             --border-neon-gold: rgba(255, 230, 0, 0.45);
+            --border-neon-cyan: rgba(0, 240, 255, 0.4);
             
             --neon-pink: #ff2a8d;
             --neon-pink-bright: #ff007f;
@@ -33,10 +34,12 @@
             --gradient-neon: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 50%, #00f0ff 100%);
             --gradient-pink-purple: linear-gradient(135deg, #ff2a8d 0%, #9b45ff 100%);
             --gradient-gold: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            --gradient-cyan: linear-gradient(135deg, #00f0ff 0%, #00a8ff 100%);
 
             --glow-pink: 0 0 20px rgba(255, 42, 141, 0.55), 0 0 40px rgba(255, 42, 141, 0.25);
             --glow-purple: 0 0 20px rgba(155, 69, 255, 0.55), 0 0 40px rgba(155, 69, 255, 0.25);
             --glow-gold: 0 0 22px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.3);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.55), 0 0 40px rgba(0, 240, 255, 0.25);
 
             --radius-sm: 10px;
             --radius-md: 18px;
@@ -284,6 +287,13 @@
             box-shadow: var(--glow-pink);
         }
 
+        .role-editor {
+            background: rgba(0, 240, 255, 0.18);
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
         .role-member {
             background: rgba(155, 69, 255, 0.15);
             color: var(--neon-purple);
@@ -413,7 +423,7 @@
             display: flex;
             gap: 8px;
             overflow-x: auto;
-            padding-bottom: 2px;
+            padding-bottom: 4px;
         }
 
         .filter-chip {
@@ -464,7 +474,6 @@
             box-shadow: 0 0 20px rgba(251, 191, 36, 0.25) !important;
             background: linear-gradient(180deg, rgba(251, 191, 36, 0.08) 0%, rgba(15, 15, 32, 0.85) 100%);
         }
-
         .card-creator .member-name {
             color: var(--neon-gold);
             text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
@@ -475,10 +484,19 @@
             box-shadow: 0 0 20px rgba(255, 42, 141, 0.25) !important;
             background: linear-gradient(180deg, rgba(255, 42, 141, 0.08) 0%, rgba(15, 15, 32, 0.85) 100%);
         }
-
         .card-admin .member-name {
             color: var(--neon-pink);
             text-shadow: 0 0 10px rgba(255, 42, 141, 0.5);
+        }
+
+        .card-editor {
+            border: 1px solid var(--neon-cyan) !important;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25) !important;
+            background: linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(15, 15, 32, 0.85) 100%);
+        }
+        .card-editor .member-name {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
         }
 
         .member-avatar {
@@ -866,11 +884,12 @@
                         <div class="members-count-badge" id="membersCountBadge">Всего: 0</div>
                     </div>
 
-                    <!-- Фильтры по ролям -->
+                    <!-- Фильтры по ролям: Все, Создатель, Админы, Монтажёры, Участники -->
                     <div class="role-filters">
                         <button class="filter-chip active" data-filter="all">⚡ Все</button>
                         <button class="filter-chip" data-filter="Создатель">👑 Создатель</button>
                         <button class="filter-chip" data-filter="Администратор">🛡️ Админы</button>
+                        <button class="filter-chip" data-filter="Монтажёр">🎬 Монтажёры</button>
                         <button class="filter-chip" data-filter="Участник">✨ Участники</button>
                     </div>
                 </div>
@@ -1174,6 +1193,9 @@
             } else if (role === "Администратор") {
                 profileCard.style.borderColor = "var(--neon-pink)";
                 profileCard.style.boxShadow = "var(--glow-pink)";
+            } else if (role === "Монтажёр" || role === "Монтажер") {
+                profileCard.style.borderColor = "var(--neon-cyan)";
+                profileCard.style.boxShadow = "var(--glow-cyan)";
             }
 
             document.getElementById('profileAge').textContent = member.age ? `${member.age} лет` : "—";
@@ -1211,18 +1233,21 @@
         function getRoleClass(role) {
             if (role === "Создатель") return "role-creator";
             if (role === "Администратор") return "role-admin";
+            if (role === "Монтажёр" || role === "Монтажер") return "role-editor";
             return "role-member";
         }
 
         function getRoleBadgeText(role) {
             if (role === "Создатель") return "👑 Создатель";
             if (role === "Администратор") return "🛡️ Администратор";
+            if (role === "Монтажёр" || role === "Монтажер") return "🎬 Монтажёр";
             return "✨ Участник";
         }
 
         function getCardRoleClass(role) {
             if (role === "Создатель") return "card-creator";
             if (role === "Администратор") return "card-admin";
+            if (role === "Монтажёр" || role === "Монтажер") return "card-editor";
             return "";
         }
 
@@ -1272,7 +1297,11 @@
 
             // Фильтр по роли
             if (currentFilter !== "all") {
-                filtered = filtered.filter(m => (m.role || "Участник") === currentFilter);
+                if (currentFilter === "Монтажёр") {
+                    filtered = filtered.filter(m => (m.role === "Монтажёр" || m.role === "Монтажер"));
+                } else {
+                    filtered = filtered.filter(m => (m.role || "Участник") === currentFilter);
+                }
             }
 
             // Фильтр по поисковой строке
