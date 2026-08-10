@@ -29,11 +29,13 @@ async def handle_health_check(request):
 
 async def handle_webapp_index(request):
     """
-    Отдает главную страницу Mini App (index.html).
+    Отдает главную страницу Mini App (index.html) в кодировке UTF-8.
     """
     index_path = os.path.join(os.path.dirname(__file__), "webapp", "index.html")
     if os.path.exists(index_path):
-        return web.FileResponse(index_path)
+        with open(index_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return web.Response(text=content, content_type="text/html", charset="utf-8")
     return web.Response(text="WebApp index.html not found", status=404)
 
 
@@ -71,11 +73,14 @@ async def start_web_server():
     # API маршруты
     app.router.add_get("/api/members", handle_api_members)
     app.router.add_get("/api/member", handle_api_member)
+    
+    # WebApp маршруты
     app.router.add_get("/webapp", handle_webapp_index)
+    app.router.add_get("/webapp/", handle_webapp_index)
     app.router.add_get("/", handle_webapp_index)
     app.router.add_get("/health", handle_health_check)
 
-    # Статические файлы (CSS, JS)
+    # Статические файлы (на случай прямого обращения к .css / .js)
     webapp_dir = os.path.join(os.path.dirname(__file__), "webapp")
     if os.path.exists(webapp_dir):
         app.router.add_static("/webapp/", path=webapp_dir, name="webapp_static")
@@ -94,7 +99,6 @@ async def main():
     """
     Основная функция запуска бота, БД и веб-сервера.
     """
-    # Настройка кодировки UTF-8 для Windows консоли
     if sys.platform == "win32":
         try:
             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -141,10 +145,7 @@ async def main():
 
     logging.info("🚀 Запуск Roblox-house анкетного бота...")
 
-    # Сброс накопленных обновлений
     await bot.delete_webhook(drop_pending_updates=True)
-
-    # Уведомление в скрытый канал логов
     await send_log(bot, "🟢 <b>Roblox House Бот & Mini App успешно запущены!</b>")
 
     try:
