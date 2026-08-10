@@ -191,10 +191,7 @@ async def main():
     await send_log(bot, "🟢 <b>Roblox House Бот & Mini App успешно запущены!</b>")
 
     try:
-        await dp.start_polling(
-            bot,
-            allowed_updates=["message", "callback_query", "chat_member", "my_chat_member"]
-        )
+        await dp.start_polling(bot)
     finally:
         await send_log(bot, "🔴 <b>Roblox House Бот остановлен!</b>")
 
