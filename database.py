@@ -153,7 +153,8 @@ def get_all_members():
     Возвращает список всех участников, отсортированный по важности роли:
     1. Создатель
     2. Администратор
-    3. Участник
+    3. Монтажёр
+    4. Участник
     """
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -163,7 +164,9 @@ def get_all_members():
             CASE role 
                 WHEN 'Создатель' THEN 1 
                 WHEN 'Администратор' THEN 2 
-                ELSE 3 
+                WHEN 'Монтажёр' THEN 3
+                WHEN 'Монтажер' THEN 3
+                ELSE 4 
             END,
             joined_at DESC
     """)
